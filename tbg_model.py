@@ -355,11 +355,20 @@ class tbg_model():
 
         elif feature_mode == "swave_triplet_antisymmetric_orbit":
             self.models=[]
-            for parameter in parameters:
+            
+            if len(parameters) == 1:
+                parameter = parameters[0]
                 self.temp_model = cp.deepcopy(self.model)
                 self.add_swave_triplet_antisymmetric_orbit(parameter)
                 self.models.append(self.temp_model)
-            self.evaluator.eval_parameters(self.models,parameters)
+                self.evaluator.eval_base(self.temp_model)
+
+            else:
+                for parameter in parameters:
+                    self.temp_model = cp.deepcopy(self.model)
+                    self.add_swave_triplet_antisymmetric_orbit(parameter)
+                    self.models.append(self.temp_model)
+                self.evaluator.eval_parameters(self.models,parameters)
         
         elif feature_mode == "swave_triplet_antisymmetric_hopping":
             self.models=[]

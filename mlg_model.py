@@ -69,8 +69,8 @@ class mlg_model():
         self._set_degeneracy(spin_is_degen,valley_is_degen,bdg_is_degen)
         self.lattice = lattice
         self._set_orbitals(real_orbit_position,orbital_symmetry)
-        self.feature_mode_list = ["hopping","chemical_potential","intra_unit_cell_singlet","intra_unit_cell_triplet_antisymmetric_orbit",\
-                                  "intra_unit_cell_triplet_antisymmetric_hopping"]
+        self.feature_mode_list = ["hopping","chemical potential","monolayer onsite spin singlet","intra cell spin singlet",\
+                                  "intra cell triplet antisymmetric orbit","intra cell triplet antisymmetric hopping"]
         self._set_helpers()
         self.Δs = Δs
         self.μs = μs
@@ -137,7 +137,7 @@ class mlg_model():
     
     def add_chemical_potential(self,μ):
 
-        orbit_matrix,spin_matrix,valley_matrix = self.tensorist.get_subspace_matrices('chemical_potential')
+        orbit_matrix,spin_matrix,valley_matrix = self.tensorist.get_subspace_matrices('chemical potential')
 
         # enlarge subspace in order of: orbit, spin, valley, bdg
         subspace = orbit_matrix
@@ -163,20 +163,21 @@ class mlg_model():
         if not self.bdg_is_degen:
             Logger.raiseException('Need to set bdg_is_degen to True in order to include pairing.',exception=ValueError)
 
-        orbit_matrix,spin_matrix,valley_matrix = self.tensorist.get_subspace_matrices(feature_mode)
+        orbit_matrix_dict,spin_matrix,valley_matrix = self.tensorist.get_subspace_matrix_dicts(feature_mode)
         
         # enlarge subspace in order of: orbit, spin, valley, bdg
-        subspace = orbit_matrix
-        if self.spin_is_degen:
-            subspace = self.tensorist.tensor_to_spin(spin_matrix,subspace)
-        if self.valley_is_degen:
-            subspace = self.tensorist.tensor_to_valley(subspace)
-        bdg_subspace_csr = self.tensorist.tensor_to_bdg_pairing_part(subspace)
+        for (Rx,Ry),orbit_matrix in orbit_matrix_dict.items():
+            subspace = orbit_matrix
+            if self.spin_is_degen:
+                subspace = self.tensorist.tensor_to_spin(spin_matrix,subspace)
+            if self.valley_is_degen:
+                subspace = self.tensorist.tensor_to_valley(subspace)
+            bdg_subspace_csr = self.tensorist.tensor_to_bdg_pairing_part(subspace)
 
-        # input pairing to pythTB Hamiltonian
-        for m, n in zip(*bdg_subspace_csr.nonzero()):
-            value = bdg_subspace_csr[m,n]*Δ
-            self.temp_model.set_hop(value, m, n, [ 0, 0],mode='reset')
+            # input pairing to pythTB Hamiltonian
+            for m, n in zip(*bdg_subspace_csr.nonzero()):
+                value = bdg_subspace_csr[m,n]*Δ
+                self.temp_model.set_hop(value, m, n, [ Rx, Ry],mode='reset')
 
     # for just Δs
     def eval(self,feature_mode='hopping',path_points=['K','Γ','M','K']):

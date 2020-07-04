@@ -29,6 +29,7 @@ def get_kspace_dict():
     # angle = 0
     R = np.matrix([[np.cos(angle),-np.sin(angle)],[np.sin(angle),np.cos(angle)]])
     
+    Kpp = R*[[-1./3.],[1./3.]]
     K = R*[[1./3.], [2./3.]]
     K_minus = R*[[-1./3.], [-2./3.]]
     M = R*[[0.5], [0.5]]
@@ -36,10 +37,10 @@ def get_kspace_dict():
     Kp = R*[[2./3.], [1./3.]]
     Kp_minus = R*[[-2./3.], [-1./3.]]
     
-    K_in, M_in, Kp_in,K_minus_in,M_minus_in,Kp_minus_in = _kpt_array_to_list_(K,M,Kp,K_minus,M_minus,Kp_minus)
+    K_in, M_in, Kp_in, Kpp_in,K_minus_in,M_minus_in,Kp_minus_in = _kpt_array_to_list_(K,M,Kp,Kpp,K_minus,M_minus,Kp_minus)
     Γ = [0.0,0.0]
 
-    kspace_dict = {'K': K_in,'M':M_in,'Kp':Kp_in,'-K': K_in,'-M':M_in,'-Kp':Kp_in,'Γ':Γ}
+    kspace_dict = {'K': K_in,'M':M_in,'Kp':Kp_in,'Kpp': Kpp_in,'-K': K_in,'-M':M_in,'-Kp':Kp_in,'Γ':Γ}
     return kspace_dict
 
 def _kpt_array_to_list_(*args):
@@ -84,7 +85,7 @@ class InputChecker():
 
     def _check_path_points_(self,path_points):
 
-        point_list = ['K','M','Kp','-K','-M','-Kp','Γ']
+        point_list = ['K','M','Kp','Kpp','-K','-M','-Kp','Γ']
         all_present = all(item in point_list for item in path_points)
         if not all_present:
             Logger.raiseException('Some points in path_points is not accepted. Only accept '+ str(point_list)+' as input.',exception = ValueError)

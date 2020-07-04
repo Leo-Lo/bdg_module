@@ -69,8 +69,8 @@ class tbg_model_featured():
         self._set_degeneracy(spin_is_degen,valley_is_degen,bdg_is_degen)
         self.lattice = lattice
         self._set_orbitals(real_orbit_position,orbital_symmetry)
-        self.feature_mode_list = ["hopping","chemical_potential","intra_unit_cell_singlet","intra_unit_cell_triplet_antisymmetric_orbit",\
-                                  "intra_unit_cell_triplet_antisymmetric_hopping"]
+        self.feature_mode_list = ["hopping","chemical potential","intra cell spin singlet",\
+                                  "intra cell triplet antisymmetric orbit","intra cell triplet antisymmetric hopping"]
         self._set_helpers()
         self.Δs = Δs
         self.μs = μs
@@ -137,7 +137,7 @@ class tbg_model_featured():
     
     def add_chemical_potential(self,μ):
 
-        orbit_matrix,spin_matrix,valley_matrix = self.tensorist.get_subspace_matrices('chemical_potential')
+        orbit_matrix,spin_matrix,valley_matrix = self.tensorist.get_subspace_matrices(feature_mode='chemical potential')
 
         # enlarge subspace in order of: orbit, spin, valley, bdg
         subspace = orbit_matrix

@@ -81,17 +81,35 @@ class Tensorist():
             orbit_matrix = None
             spin_matrix = np.identity(self.spin_degeneracy)
         
-        elif feature_mode == "chemical_potential":
+        elif feature_mode == "chemical potential":
 
         	orbit_matrix = np.identity(self.num_band)
         	spin_matrix = np.identity(self.spin_degeneracy)
 
-        elif feature_mode == "intra_unit_cell_singlet":
+
+        elif feature_mode == "monolayer onsite spin singlet":
+
+            if self.num_band != 2:
+                Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
+
             if self.spin_is_degen:
                 spin_matrix = np.matrix([[0,1],
                                          [-1,0]])
             else:
                 spin_matrix = 1
+
+            orbit_matrix = np.matrix([
+                                     [ 1, 0],
+                                     [ 0, 1]
+                                    ])
+
+        elif feature_mode == "intra cell spin singlet":
+            if self.spin_is_degen:
+                spin_matrix = np.matrix([[0,1],
+                                         [-1,0]])
+            else:
+                Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
             if self.num_band == 5:
                 orbit_matrix = np.matrix([
                                         [ 0, 1, 0, 0, 0],
@@ -111,15 +129,11 @@ class Tensorist():
                                         [ 0, 0, 1, 0, 0, 0, 1, 0],
                                         [ 0, 0, 1, 0, 0, 0, 0, 1],
                                         ])
-            elif self.num_band == 2:
-                orbit_matrix = np.matrix([
-                                         [ 0, 1],
-                                         [ 1, 0]
-                                        ])
-            else:
-                Logger.raiseException('Invalid value of num_band, can only be 2,5,8',exception=ValueError)
             
-        elif feature_mode == "intra_unit_cell_triplet_antisymmetric_orbit":
+            else:
+                Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
+            
+        elif feature_mode == "intra cell triplet antisymmetric orbit":
             if self.spin_is_degen:
                 spin_matrix = np.matrix([[0,1],
                                          [1,0]])
@@ -147,7 +161,7 @@ class Tensorist():
             else:
                 Logger.raiseException('Invalid value of num_band, can only be 2,5,8',exception=ValueError)
             
-        elif feature_mode == "intra_unit_cell_triplet_antisymmetric_hopping":
+        elif feature_mode == "intra cell triplet antisymmetric hopping":
             spin_matrix = np.identity(self.spin_degeneracy)
             orbit_matrix = np.identity(self.num_band)
             
@@ -159,6 +173,75 @@ class Tensorist():
         valley_matrix_csr = csr_matrix(valley_matrix,dtype='complex64')
 
         return orbit_matrix_csr,spin_matrix_csr,valley_matrix_csr
+
+    def get_subspace_matrix_dicts(self,feature_mode):
+
+        if self.valley_is_degen:
+            valley_matrix = np.matrix([[0,0],[0,1]])
+        else:
+            valley_matrix = 1
+        
+        
+        if feature_mode == "monolayer onsite intra unit cell spin singlet":
+
+            if self.num_band != 2:
+                Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
+
+            if self.spin_is_degen:
+                spin_matrix = np.matrix([[0,1],
+                                         [-1,0]])
+            else:
+                spin_matrix = 1
+
+            orbit_matrix_intra = np.matrix([
+                                       [ 0, 1],
+                                       [ 1, 0]
+                                       ])
+
+            orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
+
+            orbit_dict = {
+                            (0,0): orbit_matrix_intra_csr,
+                            }
+
+        elif feature_mode == "monolayer onsite spin singlet":
+
+            if self.num_band != 2:
+                Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
+
+            if self.spin_is_degen:
+                spin_matrix = np.matrix([[0,1],
+                                         [-1,0]])
+            else:
+                spin_matrix = 1
+
+            orbit_matrix_intra = np.matrix([
+                                       [ 0, 1],
+                                       [ 1, 0]
+                                       ])
+
+            orbit_matrix_inter = np.matrix([
+                                       [ 0, 1],
+                                       [ 1, 0]
+                                       ])
+
+            orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
+            orbit_matrix_inter_csr = csr_matrix(orbit_matrix_inter,dtype='complex64')
+
+            orbit_dict = {
+                            (0,0): orbit_matrix_intra_csr,
+                            (1,0): orbit_matrix_inter_csr,
+                            (0,1): orbit_matrix_inter_csr
+                            }
+
+        else:
+            Logger.raiseException('Wrong value for \"feature_mode\". Only accept '+ str(self.feature_mode_list),exception=ValueError)
+
+        spin_matrix_csr = csr_matrix(spin_matrix,dtype='complex64')
+        valley_matrix_csr = csr_matrix(valley_matrix,dtype='complex64')
+
+        return orbit_dict,spin_matrix_csr,valley_matrix_csr
+
 
     def set_subspace_dicts(self):
 
