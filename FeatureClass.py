@@ -22,13 +22,23 @@ class Orbiter():
         if self.real_orbit_position:
             if self.num_band==5:
                 self.add_5band_orbits(orb,total_degen)
-            else:    #num_band==8
+            elif self.num_band==8:
                 self.add_8band_orbits(orb,total_degen)     
+            elif self.num_band==2:
+                self.add_2band_orbits(orb,total_degen)
+            else: 
+                Logger.raiseException('Incorrect num_band, only accept 5 or 8.',exception=ValueError)
         else:
             for i in range(0,self.num_band*total_degen,1):
                 orb.append([0.0,0.0])
         return orb
     
+    def add_2band_orbits(self,orb,total_degen):
+        # in units of lattice vectors
+        for i in range(0,total_degen,1):
+            orb.append([1.0/3,1.0/3])
+            orb.append([2.0/3,2.0/3])
+
     def add_5band_orbits(self,orb,total_degen):
         # in units of lattice vectors
         for i in range(0,total_degen,1):
@@ -55,7 +65,7 @@ class Orbiter():
 
 
 
-# Contains the physics 
+# Contains the physics of pairing mechanism
 class Tensorist():
 
     def __init__(self,**kwargs):
@@ -68,174 +78,1023 @@ class Tensorist():
         self.valley_subspace_dict = {}
         self.bdg_subspace_dict = {}
 
+    def get_subspace_matrix_dicts(self,feature_mode):
 
-    # Contains all pairing mechanism physics
-    def get_subspace_matrices(self,feature_mode):
-
-        if self.valley_is_degen:
-            valley_matrix = np.matrix([[0,0],[0,1]])
-        else:
-            valley_matrix = 1
+        use_default_valley = True
 
         if feature_mode == "hopping":
             orbit_matrix = None
             spin_matrix = np.identity(self.spin_degeneracy)
+            orbit_dict = {(0,0): orbit_matrix}
         
         elif feature_mode == "chemical potential":
 
-        	orbit_matrix = np.identity(self.num_band)
-        	spin_matrix = np.identity(self.spin_degeneracy)
-
-
-        elif feature_mode == "monolayer onsite spin singlet":
-
-            if self.num_band != 2:
-                Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
-
-            if self.spin_is_degen:
-                spin_matrix = np.matrix([[0,1],
-                                         [-1,0]])
-            else:
-                spin_matrix = 1
-
-            orbit_matrix = np.matrix([
-                                     [ 1, 0],
-                                     [ 0, 1]
-                                    ])
-
-        elif feature_mode == "intra cell spin singlet":
-            if self.spin_is_degen:
-                spin_matrix = np.matrix([[0,1],
-                                         [-1,0]])
-            else:
-                Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
-
-            if self.num_band == 5:
-                orbit_matrix = np.matrix([
-                                        [ 0, 1, 0, 0, 0],
-                                        [ 1, 0, 0, 0, 0],
-                                        [ 0, 0, 1, 0, 0],
-                                        [ 0, 0, 0, 1, 0],
-                                        [ 0, 0, 0, 0, 1]
-                                        ])
-            elif self.num_band == 8:
-                orbit_matrix = np.matrix([
-                                        [ 0, 1, 0, 0, 0, 0, 0, 0],
-                                        [ 1, 0, 0, 0, 0, 0, 0, 0],
-                                        [ 0, 0, 1, 0, 0, 1, 1, 1],
-                                        [ 0, 0, 0, 1, 0, 0, 0, 0],
-                                        [ 0, 0, 0, 0, 1, 0, 0, 0],
-                                        [ 0, 0, 1, 0, 0, 1, 0, 0],
-                                        [ 0, 0, 1, 0, 0, 0, 1, 0],
-                                        [ 0, 0, 1, 0, 0, 0, 0, 1],
-                                        ])
-            
-            else:
-                Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
-            
-        elif feature_mode == "intra cell triplet antisymmetric orbit":
-            if self.spin_is_degen:
-                spin_matrix = np.matrix([[0,1],
-                                         [1,0]])
-            else: 
-                spin_matrix = 1
-            if self.num_band == 5:
-                orbit_matrix = np.matrix([
-                                        [ 0, 1, 0, 0, 0],
-                                        [-1, 0, 0, 0, 0],
-                                        [ 0, 0, 0, 0, 0],
-                                        [ 0, 0, 0, 0, 0],
-                                        [ 0, 0, 0, 0, 0]
-                                        ])
-            elif self.num_band == 8:
-                orbit_matrix = np.matrix([
-                                        [ 0, 1, 0, 0, 0, 0, 0, 0],
-                                        [-1, 0, 0, 0, 0, 0, 0, 0],
-                                        [ 0, 0, 0, 0, 0, 1, 1, 1],
-                                        [ 0, 0, 0, 0, 1, 0, 0, 0],
-                                        [ 0, 0, 0,-1, 0, 0, 0, 0],
-                                        [ 0, 0,-1, 0, 0, 0, 1, 1],
-                                        [ 0, 0,-1, 0, 0,-1, 0, 1],
-                                        [ 0, 0,-1, 0, 0,-1,-1, 0],
-                                        ])
-            else:
-                Logger.raiseException('Invalid value of num_band, can only be 2,5,8',exception=ValueError)
-            
-        elif feature_mode == "intra cell triplet antisymmetric hopping":
-            spin_matrix = np.identity(self.spin_degeneracy)
             orbit_matrix = np.identity(self.num_band)
+            spin_matrix = np.identity(self.spin_degeneracy)
+            orbit_dict = {(0,0): orbit_matrix}
+
+        else:
+
+            if self.layer_material=='monolayer graphene':
+
+                if feature_mode == "monolayer intra-unit-cell inter-sublattice spin singlet":
+
+                    if self.num_band != 2:
+                        Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    orbit_matrix_intra = np.matrix([
+                                               [ 0, 1],
+                                               [ 1, 0]
+                                               ])
+
+                    orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
+
+                    orbit_dict = {
+                                    (0,0): orbit_matrix_intra_csr,
+                                    }
+
+                elif feature_mode == "spin singlet, valley triplet τ1, intra-unit-cell inter-sublattice triplet σ1":
+
+                    if self.num_band != 2:
+                        Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    
+                    valley_matrix = np.matrix([
+                                               [ 0, 1],
+                                               [ 1, 0]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_intra = np.matrix([
+                                               [ 0, 1],
+                                               [ 1, 0]
+                                               ])
+
+                    orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
+
+                    orbit_dict = {
+                                    (0,0): orbit_matrix_intra_csr,
+                                    }
+                
+                elif feature_mode == "spin singlet, valley triplet τ0, intra-unit-cell inter-sublattice triplet σ1":
+
+                    if self.num_band != 2:
+                        Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    
+                    valley_matrix = np.matrix([
+                                               [ 1, 0],
+                                               [ 0, 1]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_intra = np.matrix([
+                                               [ 0, 1],
+                                               [ 1, 0]
+                                               ])
+
+                    orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
+
+                    orbit_dict = {
+                                    (0,0): orbit_matrix_intra_csr,
+                                    }
+
+                elif feature_mode == "spin singlet, valley triplet τ1, intra-unit-cell onsite triplet σ0":
+
+                    if self.num_band != 2:
+                        Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    
+                    valley_matrix = np.matrix([
+                                               [ 0, 1],
+                                               [ 1, 0]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_intra = np.matrix([
+                                               [ 1, 0],
+                                               [ 0, 1]
+                                               ])
+
+                    orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
+
+                    orbit_dict = {
+                                    (0,0): orbit_matrix_intra_csr,
+                                    }
+
+                elif feature_mode == "spin singlet, valley triplet τ0, intra-unit-cell onsite triplet σ0":
+
+                    if self.num_band != 2:
+                        Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    
+                    valley_matrix = np.matrix([
+                                               [ 1, 0],
+                                               [ 0, 1]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_intra = np.matrix([
+                                               [ 1, 0],
+                                               [ 0, 1]
+                                               ])
+
+                    orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
+
+                    orbit_dict = {
+                                    (0,0): orbit_matrix_intra_csr,
+                                    }
+
+                elif feature_mode == "spin singlet, valley singlet, intra-unit-cell inter-sublattice singlet":
+
+                    if self.num_band != 2:
+                        Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    
+                    valley_matrix = np.matrix([
+                                               [ 0, 1],
+                                               [-1, 0]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_intra = np.matrix([
+                                               [ 0, 1],
+                                               [-1, 0]
+                                               ])
+
+                    orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
+
+                    orbit_dict = {
+                                    (0,0): orbit_matrix_intra_csr,
+                                    }
+                
+                elif feature_mode == "monolayer inter-sublattice spin singlet (3 fold symmetric)":
+
+                    if self.num_band != 2:
+                        Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    orbit_matrix_both = np.matrix([
+                                               [ 0, 1],
+                                               [ 1, 0]
+                                               ])
+
+                    orbit_matrix_up = np.matrix([
+                                               [ 0, 1],
+                                               [ 0, 0]
+                                               ])
+
+                    orbit_matrix_down = np.matrix([
+                                               [ 0, 0],
+                                               [ 1, 0]
+                                               ])
+
+                    orbit_matrix_both_csr = csr_matrix(orbit_matrix_both,dtype='complex64')
+                    orbit_matrix_up_csr = csr_matrix(orbit_matrix_up,dtype='complex64')
+                    orbit_matrix_down_csr = csr_matrix(orbit_matrix_down,dtype='complex64')
+
+                    orbit_dict = {
+                                    ( 0, 0): orbit_matrix_both_csr,
+                                    ( 1, 0): orbit_matrix_up_csr,
+                                    (-1, 0): orbit_matrix_down_csr,
+                                    ( 0, 1): orbit_matrix_up_csr,
+                                    ( 0,-1): orbit_matrix_down_csr
+                                    }
+
+                elif feature_mode == "monolayer onsite spin singlet":
+
+                    if self.num_band != 2:
+                        Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    orbit_matrix = np.matrix([
+                                             [ 1, 0],
+                                             [ 0, 1]
+                                            ])
+                    orbit_dict = {
+                                    (0,0): orbit_matrix,
+                                    }
+
+                elif feature_mode == "monolayer intra-unit-cell inter-sublattice spin triplet":
+
+                    if self.num_band != 2:
+                        Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    orbit_matrix = np.matrix([
+                                             [ 0, 1],
+                                             [-1, 0]
+                                            ])
+                    orbit_dict = {
+                                    (0,0): orbit_matrix,
+                                    }
+                else: 
+                    Logger.raiseException('Invalid feature mode for self.layer_material=monolayer graphene.', exception=ValueError)
+
+            elif self.layer_material=='tbg':
+
+                if feature_mode == "intra cell spin singlet":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if self.num_band == 5:
+                        orbit_matrix = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 1, 0, 0],
+                                                [ 0, 0, 0, 1, 0],
+                                                [ 0, 0, 0, 0, 1]
+                                                ])
+                    elif self.num_band == 8:
+                        orbit_matrix = np.matrix([
+                                                [ 0, 1, 0, 0, 0, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 1, 0, 0, 1, 1, 1],
+                                                [ 0, 0, 0, 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 1, 0, 0, 0],
+                                                [ 0, 0, 1, 0, 0, 1, 0, 0],
+                                                [ 0, 0, 1, 0, 0, 0, 1, 0],
+                                                [ 0, 0, 1, 0, 0, 0, 0, 1],
+                                                ])
+                    
+                    else:
+                        Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
+
+                    orbit_dict = {(0,0): orbit_matrix}
+
+                elif feature_mode == "spin singlet inter-sublattice intra-unit-cell 12":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if self.num_band == 5:
+                        orbit_matrix = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+                    elif self.num_band == 8:
+                        orbit_matrix = np.matrix([
+                                                [ 0, 1, 0, 0, 0, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                ])
+                    
+                    else:
+                        Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
+
+                    orbit_dict = {(0,0): orbit_matrix}
+
+                elif feature_mode == "spin singlet inter-sublattice intra-unit-cell 11 22":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if self.num_band == 5:
+                        orbit_matrix = np.matrix([
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+                    elif self.num_band == 8:
+                        orbit_matrix = np.matrix([
+                                                [ 1, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                ])
+                    
+                    else:
+                        Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
+
+                    orbit_dict = {(0,0): orbit_matrix}
+
+                ##### intra-unit cell pairing ######
+                # valley triplet inter-sublattice
+                elif feature_mode == "spin singlet, valley triplet τ1, intra-unit-cell inter-sublattice 12 triplet":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    valley_matrix = np.matrix([
+                                               [ 0, 1],
+                                               [ 1, 0]
+                                               ])
+                    use_default_valley = False
+
+                    if self.num_band == 5:
+                        orbit_matrix = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+                    elif self.num_band == 8:
+                        orbit_matrix = np.matrix([
+                                                [ 0, 1, 0, 0, 0, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                ])
+                    
+                    else:
+                        Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
+
+                    orbit_dict = {(0,0): orbit_matrix}
+                elif feature_mode == "spin singlet, valley triplet τ0, intra-unit-cell inter-sublattice 12 triplet":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    valley_matrix = np.matrix([
+                                               [ 1, 0],
+                                               [ 0, 1]
+                                               ])
+                    use_default_valley = False
+
+                    if self.num_band == 5:
+                        orbit_matrix = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+                    elif self.num_band == 8:
+                        orbit_matrix = np.matrix([
+                                                [ 0, 1, 0, 0, 0, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                ])
+                    
+                    else:
+                        Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
+
+                    orbit_dict = {(0,0): orbit_matrix}
+                elif feature_mode == "spin singlet, valley triplet τ3, intra-unit-cell inter-sublattice 12 triplet":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    valley_matrix = np.matrix([
+                                               [ 1, 0],
+                                               [ 0,-1]
+                                               ])
+                    use_default_valley = False
+
+                    if self.num_band == 5:
+                        orbit_matrix = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+                    elif self.num_band == 8:
+                        orbit_matrix = np.matrix([
+                                                [ 0, 1, 0, 0, 0, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                ])
+                    
+                    else:
+                        Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
+
+                    orbit_dict = {(0,0): orbit_matrix}
+                # valley triplet intra-sublattice
+                elif feature_mode == "spin singlet, valley triplet τ1, intra-unit-cell intra-sublattice 1122 triplet":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    valley_matrix = np.matrix([
+                                               [ 0, 1],
+                                               [ 1, 0]
+                                               ])
+                    use_default_valley = False
+
+                    if self.num_band == 5:
+                        orbit_matrix = np.matrix([
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+                    elif self.num_band == 8:
+                        orbit_matrix = np.matrix([
+                                                [ 1, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                ])
+                    
+                    else:
+                        Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
+
+                    orbit_dict = {(0,0): orbit_matrix}
+                elif feature_mode == "spin singlet, valley triplet τ0, intra-unit-cell intra-sublattice 1122 triplet":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    valley_matrix = np.matrix([
+                                               [ 1, 0],
+                                               [ 0, 1]
+                                               ])
+                    use_default_valley = False
+
+                    if self.num_band == 5:
+                        orbit_matrix = np.matrix([
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+                    elif self.num_band == 8:
+                        orbit_matrix = np.matrix([
+                                                [ 1, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                ])
+                    
+                    else:
+                        Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
+
+                    orbit_dict = {(0,0): orbit_matrix}
+                elif feature_mode == "spin singlet, valley triplet τ3, intra-unit-cell intra-sublattice 1122 triplet":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    valley_matrix = np.matrix([
+                                               [ 1, 0],
+                                               [ 0,-1]
+                                               ])
+                    use_default_valley = False
+
+                    if self.num_band == 5:
+                        orbit_matrix = np.matrix([
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+                    elif self.num_band == 8:
+                        orbit_matrix = np.matrix([
+                                                [ 1, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                ])
+                    
+                    else:
+                        Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
+
+                    orbit_dict = {(0,0): orbit_matrix}
+                # valley singlet
+                elif feature_mode == "spin singlet, valley singlet, intra-unit-cell 12 inter-sublattice singlet":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    valley_matrix = np.matrix([
+                                               [ 0, 1],
+                                               [-1, 0]
+                                               ])
+                    use_default_valley = False
+
+                    if self.num_band == 5:
+                        orbit_matrix = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [-1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+                    elif self.num_band == 8:
+                        orbit_matrix = np.matrix([
+                                                [ 0, 1, 0, 0, 0, 0, 0, 0],
+                                                [-1, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                ])
+                    
+                    else:
+                        Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
+
+                    orbit_dict = {(0,0): orbit_matrix}
+
+                ##### C3 inter-sublattice pairing ######
+                # inter-valley
+                elif feature_mode == "spin singlet, valley triplet τ1, C3 inter-sublattice 12 triplet":
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    # only the upper left corner; the lower right will be filled at the valley tensor operation
+                    valley_matrix = np.matrix([
+                                               [ 0, 1],
+                                               [ 0, 0]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_both = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_up = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_down = np.matrix([
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_both_csr = csr_matrix(orbit_matrix_both,dtype='complex64')
+                    orbit_matrix_up_csr = csr_matrix(orbit_matrix_up,dtype='complex64')
+                    orbit_matrix_down_csr = csr_matrix(orbit_matrix_down,dtype='complex64')
+
+                    orbit_dict = {
+                                    ( 0, 0): orbit_matrix_both_csr,
+                                    ( 1, 0): orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3),
+                                    ( 0, 1): orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3),
+                                    (-1, 0): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3),
+                                    ( 0,-1): orbit_matrix_up_csr*np.exp(1j*8*np.pi/3)
+                                    }
+                # intra-valley
+                elif feature_mode == "spin singlet, valley triplet τ0, C3 intra-sublattice 1122 triplet":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    valley_matrix = np.matrix([
+                                               [ 1, 0],
+                                               [ 0, 1]
+                                               ])
+                    use_default_valley = False
+
+                    if self.num_band == 5:
+                        orbit_matrix = np.matrix([
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+                    elif self.num_band == 8:
+                        orbit_matrix = np.matrix([
+                                                [ 1, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                ])
+                    
+                    else:
+                        Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
+
+                    orbit_matrix_csr = csr_matrix(orbit_matrix,dtype='complex64')
+                    C3_coefficient = 1 + np.exp(1j*4*np.pi/3) + np.exp(1j*8*np.pi/3)
+                    orbit_dict = {(0,0): orbit_matrix_csr*C3_coefficient}
+
+                elif feature_mode == "spin singlet, valley triplet τ0, C3 intra-sublattice 1122 triplet (trivial)":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    valley_matrix = np.matrix([
+                                               [ 1, 0],
+                                               [ 0, 1]
+                                               ])
+                    use_default_valley = False
+
+                    if self.num_band == 5:
+                        orbit_matrix = np.matrix([
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+                    elif self.num_band == 8:
+                        orbit_matrix = np.matrix([
+                                                [ 1, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                ])
+                    
+                    else:
+                        Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
+
+                    orbit_matrix_csr = csr_matrix(orbit_matrix,dtype='complex64')
+                    C3_coefficient = 1 
+                    orbit_dict = {(0,0): orbit_matrix_csr*C3_coefficient}
+
+                ##### Other pairings ######
+                elif feature_mode == "spin triplet inter-sublattice intra-unit-cell 12":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if self.num_band == 5:
+                        orbit_matrix = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [ -1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+                    elif self.num_band == 8:
+                        orbit_matrix = np.matrix([
+                                                [ 0, 1, 0, 0, 0, 0, 0, 0],
+                                                [ -1, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                ])
+                    
+                    else:
+                        Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
+
+                    orbit_dict = {(0,0): orbit_matrix}
+
+                elif feature_mode == "inter-sublattice spin singlet (3 fold symmetric)(deprecated)":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if self.num_band == 5:
+                        
+                        orbit_dict = {}
+                        orbit_dict[(0,0)] = np.matrix([
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 1],
+                                                            [ 0, 0, 0, 1, 0]
+                                                            ])
+                        orbit_dict[(-1,1)] = np.matrix([
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 1, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0]
+                                                            ])
+                        orbit_dict[(1,0)] = np.matrix([
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 1, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 1, 0]
+                                                            ])
+                        orbit_dict[(0,1)] = np.matrix([
+                                                            [ 0, 1, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 1, 0]
+                                                            ])
+                        orbit_dict[(1,-1)] = np.matrix([
+                                                            [ 0, 1, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0]
+                                                            ])
+                        orbit_dict[(-1,0)] = np.matrix([
+                                                            [ 0, 1, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 1],
+                                                            [ 0, 0, 0, 0, 0]
+                                                            ])
+                        orbit_dict[(0,-1)] = np.matrix([
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 1, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 1],
+                                                            [ 0, 0, 0, 0, 0]
+                                                            ])
+                    
+                    # not updated yet
+                    elif self.num_band == 8:
+                        orbit_matrix = np.matrix([
+                                                [ 0, 1, 0, 0, 0, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 1, 0, 0, 1, 1, 1],
+                                                [ 0, 0, 0, 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 1, 0, 0, 0],
+                                                [ 0, 0, 1, 0, 0, 1, 0, 0],
+                                                [ 0, 0, 1, 0, 0, 0, 1, 0],
+                                                [ 0, 0, 1, 0, 0, 0, 0, 1],
+                                                ])
+                
+                elif feature_mode == "inter-sublattice spin triplet (3 fold symmetric)(deprecated)":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if self.num_band == 5:
+                        
+                        orbit_dict = {}
+                        orbit_dict[(0,0)] = np.matrix([
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 1],
+                                                            [ 0, 0, 0,-1, 0]
+                                                            ])
+                        orbit_dict[(-1,1)] = np.matrix([
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 1, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0]
+                                                            ])
+                        orbit_dict[(1,0)] = np.matrix([
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 1, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 1, 0]
+                                                            ])
+                        orbit_dict[(0,1)] = np.matrix([
+                                                            [ 0, 1, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 1, 0]
+                                                            ])
+                        orbit_dict[(1,-1)] = np.matrix([
+                                                            [ 0,-1, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0]
+                                                            ])
+                        orbit_dict[(-1,0)] = np.matrix([
+                                                            [ 0,-1, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0,-1],
+                                                            [ 0, 0, 0, 0, 0]
+                                                            ])
+                        orbit_dict[(0,-1)] = np.matrix([
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [-1, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0, 0],
+                                                            [ 0, 0, 0, 0,-1],
+                                                            [ 0, 0, 0, 0, 0]
+                                                            ])
+                    
+                    # not updated yet
+                    elif self.num_band == 8:
+                        orbit_matrix = np.matrix([
+                                                [ 0, 1, 0, 0, 0, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 1, 0, 0, 1, 1, 1],
+                                                [ 0, 0, 0, 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 1, 0, 0, 0],
+                                                [ 0, 0, 1, 0, 0, 1, 0, 0],
+                                                [ 0, 0, 1, 0, 0, 0, 1, 0],
+                                                [ 0, 0, 1, 0, 0, 0, 0, 1],
+                                                ])
+
+                elif feature_mode == "intra cell triplet antisymmetric orbit":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [1,0]])
+                    else: 
+                        spin_matrix = 1
+                    if self.num_band == 5:
+                        orbit_matrix = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [-1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+                    elif self.num_band == 8:
+                        orbit_matrix = np.matrix([
+                                                [ 0, 1, 0, 0, 0, 0, 0, 0],
+                                                [-1, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 1, 1, 1],
+                                                [ 0, 0, 0, 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0,-1, 0, 0, 0, 0],
+                                                [ 0, 0,-1, 0, 0, 0, 1, 1],
+                                                [ 0, 0,-1, 0, 0,-1, 0, 1],
+                                                [ 0, 0,-1, 0, 0,-1,-1, 0],
+                                                ])
+                    else:
+                        Logger.raiseException('Invalid value of num_band, can only be 2,5,8',exception=ValueError)
+                        
+                    orbit_dict = {(0,0): orbit_matrix}
+                    
+                elif feature_mode == "intra cell triplet antisymmetric hopping":
+                    spin_matrix = np.identity(self.spin_degeneracy)
+                    orbit_matrix = np.identity(self.num_band)
+                
+                    orbit_dict = {(0,0): orbit_matrix}
+
+                else: 
+                    Logger.raiseException('Invalid feature mode for self.layer_material=tbg.', exception=ValueError)
             
-        else:
-            Logger.raiseException('Wrong value for \"feature_mode\". Only accept '+ str(self.feature_mode_list),exception=ValueError)
-
-        orbit_matrix_csr = csr_matrix(orbit_matrix,dtype='complex64')
-        spin_matrix_csr = csr_matrix(spin_matrix,dtype='complex64')
-        valley_matrix_csr = csr_matrix(valley_matrix,dtype='complex64')
-
-        return orbit_matrix_csr,spin_matrix_csr,valley_matrix_csr
-
-    def get_subspace_matrix_dicts(self,feature_mode):
-
-        if self.valley_is_degen:
-            valley_matrix = np.matrix([[0,0],[0,1]])
-        else:
-            valley_matrix = 1
-        
-        
-        if feature_mode == "monolayer onsite intra unit cell spin singlet":
-
-            if self.num_band != 2:
-                Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
-
-            if self.spin_is_degen:
-                spin_matrix = np.matrix([[0,1],
-                                         [-1,0]])
             else:
-                spin_matrix = 1
+                Logger.raiseException('Wrong value for \"feature_mode\". Check the documentation of get_subspace_matrix_dicts\
+                     method, in Tensorist Class in FeatureClass module for allowed input.',exception=ValueError)
 
-            orbit_matrix_intra = np.matrix([
-                                       [ 0, 1],
-                                       [ 1, 0]
-                                       ])
-
-            orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
-
-            orbit_dict = {
-                            (0,0): orbit_matrix_intra_csr,
-                            }
-
-        elif feature_mode == "monolayer onsite spin singlet":
-
-            if self.num_band != 2:
-                Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
-
-            if self.spin_is_degen:
-                spin_matrix = np.matrix([[0,1],
-                                         [-1,0]])
+        # valley matrix
+        if use_default_valley:
+            if self.valley_is_degen:
+                valley_matrix = np.matrix([[0,0],[0,1]])
             else:
-                spin_matrix = 1
-
-            orbit_matrix_intra = np.matrix([
-                                       [ 0, 1],
-                                       [ 1, 0]
-                                       ])
-
-            orbit_matrix_inter = np.matrix([
-                                       [ 0, 1],
-                                       [ 1, 0]
-                                       ])
-
-            orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
-            orbit_matrix_inter_csr = csr_matrix(orbit_matrix_inter,dtype='complex64')
-
-            orbit_dict = {
-                            (0,0): orbit_matrix_intra_csr,
-                            (1,0): orbit_matrix_inter_csr,
-                            (0,1): orbit_matrix_inter_csr
-                            }
-
-        else:
-            Logger.raiseException('Wrong value for \"feature_mode\". Only accept '+ str(self.feature_mode_list),exception=ValueError)
+                valley_matrix = 1
 
         spin_matrix_csr = csr_matrix(spin_matrix,dtype='complex64')
         valley_matrix_csr = csr_matrix(valley_matrix,dtype='complex64')
@@ -261,8 +1120,8 @@ class Tensorist():
             t_real = self.data[i,4]
             t_imag = self.data[i,5]
             t = (t_real+1j*t_imag)
-            m = self.data[i,2]-1
-            n = self.data[i,3]-1
+            m = self.data[i,2]-1    # note, this is to account for indexing starting at 1 for Carr's data
+            n = self.data[i,3]-1    # note, this is to account for indexing starting at 1 for Carr's data
             Rx = self.data[i,0]
             Ry = self.data[i,1]
             try:
@@ -277,7 +1136,7 @@ class Tensorist():
 
     def set_spin_subspace_dict(self):
 
-        _,spin_matrix,_ = self.get_subspace_matrices(feature_mode="hopping")
+        _,spin_matrix,_ = self.get_subspace_matrix_dicts(feature_mode="hopping")
         for (Rx,Ry), orbit_matrix in self.orbit_matrix_dict.items():
             spin_subspace_csr = self.tensor_to_spin(spin_matrix,orbit_matrix)
             self.spin_subspace_dict[(Rx,Ry)] = spin_subspace_csr
@@ -327,6 +1186,44 @@ class Tensorist():
         upper_left_csr = upper_left.tocsr()
         
         valley_subspace_csr = lower_right_csr + upper_left_csr
+        return valley_subspace_csr
+
+    def tensor_to_valley_pairing_part(self,valley_matrix,subspace):
+
+        valley_subspace = kron(valley_matrix,subspace)
+        valley_subspace_csr = valley_subspace.tocsr()
+        return valley_subspace_csr
+
+    def tensor_to_valley_pairing_part_τ1_C3_intersublattice(self,valley_matrix,subspace):
+
+        # set lower left block matrix: complex conjugate of subspace matrix
+        lower_block_subspace = subspace.conj()
+        lower_block_matrix = np.matrix([[0,0],[1,0]])
+        lower_block = kron(lower_block_matrix,lower_block_subspace)
+        lower_block_csr = lower_block.tocsr()
+
+        # set upper right block matrix: original subspace matrix
+        upper_block_matrix = np.matrix([[0,1],[0,0]])
+        upper_block = kron(upper_block_matrix,subspace)
+        upper_block_csr = upper_block.tocsr()
+
+        valley_subspace_csr = lower_block_csr + upper_block_csr
+        return valley_subspace_csr
+
+    def tensor_to_valley_pairing_part_τ0_C3_intrasublattice(self,valley_matrix,subspace):
+
+        # set lower left block matrix: complex conjugate of subspace matrix
+        lower_block_subspace = subspace.conj()
+        lower_block_matrix = np.matrix([[0,0],[1,0]])
+        lower_block = kron(lower_block_matrix,lower_block_subspace)
+        lower_block_csr = lower_block.tocsr()
+
+        # set upper right block matrix: original subspace matrix
+        upper_block_matrix = np.matrix([[0,1],[0,0]])
+        upper_block = kron(upper_block_matrix,subspace)
+        upper_block_csr = upper_block.tocsr()
+
+        valley_subspace_csr = lower_block_csr + upper_block_csr
         return valley_subspace_csr
 
     def tensor_to_bdg_hopping_part(self,subspace):

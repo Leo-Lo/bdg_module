@@ -7,7 +7,7 @@ from NearFieldOptics.Materials.material_types import * #For Logger, overkill
 from scipy.sparse import *
 import pickle
 import pdb
-from tbg_module import ServiceClass as sv
+from tbg_module import ServiceClass as serv
 from tbg_module import FeatureClass as feat
 
 # dictionary of numpy matrix representation of hopping Hamiltonian
@@ -51,30 +51,41 @@ def pickle_load(file_name):
 
 class tbg_model_featured():
 
-    def __init__(self,file_name='source/hmat_5band_bot_1p10_rewan_RS.dat',lattice=[[1.0, 0.0], [0.5, np.sqrt(3.0)/2.0]],\
-                real_orbit_position=False,spin_is_degen=False,valley_is_degen=False,bdg_is_degen=False,orbital_symmetry=False,\
-                kspace_numsteps=100,Δs=[0],μs=[0]):
+    def __init__(self,file_name='source/hmat_5band_bot_1p10_rewan_RS.dat',layer_material='tbg',\
+                lattice=[[1.0, 0.0], [0.5, np.sqrt(3.0)/2.0]],real_orbit_position=False,orbital_symmetry=False,\
+                spin_is_degen=False,valley_is_degen=False,bdg_is_degen=False,\
+                kspace_numsteps=100,include_hopping=True,conjugate_for_hopping=True,\
+                Δs=[0],μs=[0]):
         
-        num_band = int(file_name[12])    #based on the file naming convention in Carr's Github repo
+        if layer_material=='tbg':
+            num_band = int(file_name[12])    #based on the file naming convention in Carr's Github repo
+        elif layer_material=='monolayer graphene':
+            num_band = 2
+        else:
+            Logger.raiseException('Invalid input for \"layer_material\". Only accept \"tbg\" or \"monolayer graphene\"',\
+                exception=ValueError)
 
         # filename is not checked, num_band is checked instead
         # will raiseException if input type/value is not as expected
-        checker = sv.InputChecker(num_band=num_band,lattice=lattice,real_orbit_position=real_orbit_position,\
+        checker = serv.InputChecker(num_band=num_band,lattice=lattice,real_orbit_position=real_orbit_position,\
                                 spin_is_degen=spin_is_degen,valley_is_degen=valley_is_degen,bdg_is_degen=bdg_is_degen,\
                                 orbital_symmetry=orbital_symmetry,kspace_numsteps=kspace_numsteps)
         checker.check_argument_clean()
 
         self.data = np.loadtxt(file_name)
+        self.layer_material = layer_material
         self.num_band = num_band
         self._set_degeneracy(spin_is_degen,valley_is_degen,bdg_is_degen)
         self.lattice = lattice
         self._set_orbitals(real_orbit_position,orbital_symmetry)
-        self.feature_mode_list = ["hopping","chemical potential","intra cell spin singlet",\
-                                  "intra cell triplet antisymmetric orbit","intra cell triplet antisymmetric hopping"]
+        self.kspace_numsteps = kspace_numsteps
         self._set_helpers()
         self.Δs = Δs
         self.μs = μs
         self.feature_mode = None
+
+        self.include_hopping = include_hopping
+        self.conjugate_for_hopping = conjugate_for_hopping
 
         self._set_model()
 
@@ -106,18 +117,21 @@ class tbg_model_featured():
 
     def _set_helpers(self):
 
-        self.evaluator = sv.Evaluator(num_band=self.num_band,spin_degeneracy=self.spin_degeneracy,valley_degeneracy=self.valley_degeneracy,\
-                                    bdg_degeneracy=self.bdg_degeneracy,spin_is_degen=self.spin_is_degen,kspace_numsteps=100)
-        self.plotter = sv.Plotter(num_band=self.num_band,spin_degeneracy=self.spin_degeneracy,bdg_degeneracy=self.bdg_degeneracy)
-        self.tensorist = feat.Tensorist(data=self.data,num_band=self.num_band,feature_mode_list=self.feature_mode_list,\
+        self.evaluator = serv.Evaluator(num_band=self.num_band,spin_degeneracy=self.spin_degeneracy,valley_degeneracy=self.valley_degeneracy,\
+                                    bdg_degeneracy=self.bdg_degeneracy,spin_is_degen=self.spin_is_degen,kspace_numsteps=self.kspace_numsteps)
+        self.plotter = serv.Plotter(num_band=self.num_band,spin_degeneracy=self.spin_degeneracy,valley_degeneracy=self.valley_degeneracy,\
+                                    bdg_degeneracy=self.bdg_degeneracy)
+        self.tensorist = feat.Tensorist(data=self.data,layer_material=self.layer_material,num_band=self.num_band,\
                                         spin_is_degen=self.spin_is_degen,valley_is_degen=self.valley_is_degen,bdg_is_degen=self.bdg_is_degen)
 
     def _set_model(self):
 
+        # the dimension of real space and k-space are both 2
         self.model = tb_model(2,2,self.lattice,self.orbit) 
         self.temp_model = None
         self.models = None
-        self.add_hopping()
+        if self.include_hopping:
+            self.add_hopping()
 
     # Specify hopping term for bare Hamiltonian; called in superclass when tbg_model_featured class is initiated
     def add_hopping(self):
@@ -129,16 +143,21 @@ class tbg_model_featured():
         for (Rx,Ry), matrix in subspace_dict.items():
             for m, n in zip(*matrix.nonzero()):
                 if m!=n or Rx!=0 or Ry!=0:
-                    t = matrix[m,n]/2    #divide by 2 as the conjugate pair will be summed to give extra factor of 2
-                    self.model.set_hop(t, m, n, [ Rx, Ry],allow_conjugate_pair=True,mode='reset')
+                    
+                    if self.conjugate_for_hopping:
+                        t = matrix[m,n]/2    #divide by 2 as the conjugate pair will be summed to give extra factor of 2
+                        self.model.set_hop(t, m, n, [ Rx, Ry],allow_conjugate_pair=True,mode='reset')
+                    else:
+                        t = matrix[m,n]
+                        self.model.set_hop(t, m, n, [ Rx, Ry],mode='reset')
                 else:    #on site energy
                     t_real = np.real(matrix[m,n])
                     self.model.set_onsite(t_real, int(m), mode="reset")
     
     def add_chemical_potential(self,μ):
 
-        orbit_matrix,spin_matrix,valley_matrix = self.tensorist.get_subspace_matrices(feature_mode='chemical potential')
-
+        orbit_matrix_dict,spin_matrix,valley_matrix = self.tensorist.get_subspace_matrix_dicts(feature_mode='chemical potential')
+        orbit_matrix = orbit_matrix_dict[(0,0)]   # chemical potential is onsite, so entry is only nonzero for Rx=Ry=0
         # enlarge subspace in order of: orbit, spin, valley, bdg
         subspace = orbit_matrix
         if self.spin_is_degen:
@@ -157,34 +176,37 @@ class tbg_model_featured():
             else:    #on site energy must be real
                 self.temp_model.set_onsite(value.real, m, mode='add')
 
-    # just Rx=0,Ry=0 pairing
     def add_pairing(self,Δ,feature_mode):
 
         if not self.bdg_is_degen:
             Logger.raiseException('Need to set bdg_is_degen to True in order to include pairing.',exception=ValueError)
 
-        orbit_matrix,spin_matrix,valley_matrix = self.tensorist.get_subspace_matrices(feature_mode)
+        orbit_matrix_dict,spin_matrix,valley_matrix = self.tensorist.get_subspace_matrix_dicts(feature_mode)
         
         # enlarge subspace in order of: orbit, spin, valley, bdg
-        subspace = orbit_matrix
-        if self.spin_is_degen:
-            subspace = self.tensorist.tensor_to_spin(spin_matrix,subspace)
-        if self.valley_is_degen:
-            subspace = self.tensorist.tensor_to_valley(subspace)
-        bdg_subspace_csr = self.tensorist.tensor_to_bdg_pairing_part(subspace)
+        for (Rx,Ry),orbit_matrix in orbit_matrix_dict.items():
+            subspace = orbit_matrix
+            if self.spin_is_degen:
+                subspace = self.tensorist.tensor_to_spin(spin_matrix,subspace)
+            if self.valley_is_degen:
+                subspace = self.tensorist.tensor_to_valley(subspace)
+            bdg_subspace_csr = self.tensorist.tensor_to_bdg_pairing_part(subspace)
 
-        # input pairing to pythTB Hamiltonian
-        for m, n in zip(*bdg_subspace_csr.nonzero()):
-            value = bdg_subspace_csr[m,n]*Δ
-            self.temp_model.set_hop(value, m, n, [ 0, 0],mode='reset')
+            # input pairing to pythTB Hamiltonian
+            for m, n in zip(*bdg_subspace_csr.nonzero()):
+                value = bdg_subspace_csr[m,n]*Δ
+                self.temp_model.set_hop(value, m, n, [ Rx, Ry],mode='reset')
 
-    # for just Δs
-    def eval(self,feature_mode='hopping',path_points=['K','Γ','M','K']):
+    def eval(self,feature_mode='hopping',path_points=['K','Γ','M','K'],eval_all_k=False,cal_eig_vectors=False,k_mesh_dim=(100,100)):
 
-        sv.InputChecker()._check_path_points_(path_points)
+        serv.InputChecker()._check_path_points_(path_points)
         self.evaluator.set_kspace_path(path_points)
         self.models=[]
-        
+        self.evaluator.eval_all_k = eval_all_k
+        self.evaluator.cal_eig_vectors = cal_eig_vectors
+        if eval_all_k:
+            self.evaluator.k_mesh_dim = k_mesh_dim
+
         if len(self.Δs)>1 and len(self.μs)>1:
             self.model_dict={}
             for Δ in self.Δs:
@@ -241,20 +263,25 @@ class tbg_model_featured():
 
         self.feature_mode = feature_mode
 
-    def plot(self):
+    def plot(self,xlim=None,ylim=None,plot_3D=False,plot_contour=False,zero_crossing_threshold=0.05):
 
-        self.plotter.update(self.evaluator)
-
+        self.plotter.evaluator = self.evaluator
+        if plot_contour:
+            self.plotter.zero_crossing_threshold = zero_crossing_threshold
+        
+        if plot_3D and plot_contour:
+            Logger.raiseException('Can only set one of \'plot_3D\' or \'plot_contour\' to be true.',exception=ValueError)
+        
         if self.plotter._axis == 'none':
-            self.plotter.plot_base()
+            self.plotter.plot_base(xlim=xlim,ylim=ylim,plot_3D=plot_3D,plot_contour=plot_contour)
 
         elif self.plotter._axis == 'Δ':
-            self.plotter.plot_parameters(self.Δs,param_name='Δ')
+            self.plotter.plot_parameters(self.Δs,param_name='Δ',xlim=xlim,ylim=ylim,plot_3D=plot_3D,plot_contour=plot_contour)
 
         elif self.plotter._axis == 'μ':
-            self.plotter.plot_parameters(self.μs,param_name='μ')
+            self.plotter.plot_parameters(self.μs,param_name='μ',xlim=xlim,ylim=ylim,plot_3D=plot_3D,plot_contour=plot_contour)
         elif self.plotter._axis == 'both':
-            self.plotter.plot_parameter_dict(self.Δs,self.μs)
+            self.plotter.plot_parameter_dict(self.Δs,self.μs,xlim=xlim,ylim=ylim,plot_3D=plot_3D,plot_contour=plot_contour)
         else:
             Logger.raiseException('Wrong value for private value \'_axis\'. This should not be set manually.',exception=ValueError)
 

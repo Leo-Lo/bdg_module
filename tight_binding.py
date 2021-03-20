@@ -7,8 +7,12 @@ from NearFieldOptics.Materials.material_types import * #For Logger, overkill
 from scipy.sparse import *
 import pickle
 import pdb
-from tbg_module import ServiceClass as sv
+import datetime
+from tbg_module import ServiceClass as serv
 from tbg_module import FeatureClass as feat
+import importlib
+importlib.reload(serv)
+importlib.reload(feat)
 
 # dictionary of numpy matrix representation of hopping Hamiltonian
 def get_hopping_Hamiltonian_dict(model,num_band=5, spin_degeneracy=2,valley_degeneracy=1,bdg_degeneracy=2):
@@ -49,24 +53,34 @@ def pickle_load(file_name):
 
 
 
-class mlg_model():
+class tight_binding_model():
 
-    def __init__(self,file_name='trial_mgl.dat',lattice=[[1.0, 0.0], [0.5, np.sqrt(3.0)/2.0]],nspin=1,\
-                real_orbit_position=False,spin_is_degen=False,valley_is_degen=False,bdg_is_degen=False,orbital_symmetry=False,\
-                kspace_numsteps=100,Δs=[0],μs=[0],include_hopping=True,conjugate_for_hopping=True):
+    def __init__(self,file_name='source/hmat_5band_bot_1p10_rewan_RS.dat',layer_material='tbg',\
+                lattice=[[1.0, 0.0], [0.5, np.sqrt(3.0)/2.0]],real_orbit_position=False,orbital_symmetry=False,\
+                spin_is_degen=False,valley_is_degen=False,bdg_is_degen=False,\
+                kspace_numsteps=100,include_hopping=True,conjugate_for_hopping=True,\
+                Δs=[0],μs=[0]):
         
-        num_band = 2
+        if layer_material=='tbg':
+            num_band = int(file_name[12])    #based on the file naming convention in Carr's Github repo
+        elif layer_material=='monolayer graphene':
+            num_band = 2
+        else:
+            Logger.raiseException('Invalid input for \"layer_material\". Only accept \"tbg\" or \"monolayer graphene\"',\
+                exception=ValueError)
 
         # filename is not checked, num_band is checked instead
         # will raiseException if input type/value is not as expected
-        checker = sv.InputChecker(num_band=num_band,lattice=lattice,real_orbit_position=real_orbit_position,\
+        checker = serv.InputChecker(num_band=num_band,lattice=lattice,real_orbit_position=real_orbit_position,\
                                 spin_is_degen=spin_is_degen,valley_is_degen=valley_is_degen,bdg_is_degen=bdg_is_degen,\
                                 orbital_symmetry=orbital_symmetry,kspace_numsteps=kspace_numsteps)
         checker.check_argument_clean()
 
         self.data = np.loadtxt(file_name)
+        self.layer_material = layer_material
         self.num_band = num_band
-        self.nspin = nspin
+        if self.layer_material=='tbg' and self.num_band==5:
+            self._set_top_or_bottom_for_5band(file_name)
         self._set_degeneracy(spin_is_degen,valley_is_degen,bdg_is_degen)
         self.lattice = lattice
         self._set_orbitals(real_orbit_position,orbital_symmetry)
@@ -80,6 +94,9 @@ class mlg_model():
         self.conjugate_for_hopping = conjugate_for_hopping
 
         self._set_model()
+
+    def _set_top_or_bottom_for_5band(self,file_name):
+        self._top_or_bottom = file_name[18:21]
 
     def _set_degeneracy(self,spin_is_degen,valley_is_degen,bdg_is_degen):
         
@@ -109,21 +126,33 @@ class mlg_model():
 
     def _set_helpers(self):
 
-        self.evaluator = sv.Evaluator(num_band=self.num_band,spin_degeneracy=self.spin_degeneracy,valley_degeneracy=self.valley_degeneracy,\
+        self.evaluator = serv.Evaluator(num_band=self.num_band,spin_degeneracy=self.spin_degeneracy,valley_degeneracy=self.valley_degeneracy,\
                                     bdg_degeneracy=self.bdg_degeneracy,spin_is_degen=self.spin_is_degen,kspace_numsteps=self.kspace_numsteps)
-        self.plotter = sv.Plotter(num_band=self.num_band,spin_degeneracy=self.spin_degeneracy,valley_degeneracy=self.valley_degeneracy,\
+        self.plotter = serv.Plotter(num_band=self.num_band,spin_degeneracy=self.spin_degeneracy,valley_degeneracy=self.valley_degeneracy,\
                                     bdg_degeneracy=self.bdg_degeneracy)
-        self.tensorist = feat.Tensorist(data=self.data,num_band=self.num_band,\
+        self.tensorist = feat.Tensorist(data=self.data,layer_material=self.layer_material,num_band=self.num_band,\
                                         spin_is_degen=self.spin_is_degen,valley_is_degen=self.valley_is_degen,bdg_is_degen=self.bdg_is_degen)
 
     def _set_model(self):
 
         # the dimension of real space and k-space are both 2
-        self.model = tb_model(2,2,self.lattice,self.orbit,nspin=self.nspin) 
+        self.model = tb_model(2,2,self.lattice,self.orbit) 
         self.temp_model = None
         self.models = None
         if self.include_hopping:
             self.add_hopping()
+        if self.layer_material=='tbg':
+            if self.num_band==5:
+                if self._top_or_bottom=='bot':
+                    self.add_chemical_potential(μ=-0.00800504,add_to_base_model=True)    # to adjust for the offset in Carr's model
+                elif self._top_or_bottom=='top':
+                    self.add_chemical_potential(μ=-0.00824911,add_to_base_model=True)    # to adjust for the offset in Carr's model
+                else:
+                    Logger.raiseException('\'_top_or_bottom\' parameter for tbg can only be either \'top\' or \'bot\'.',exception=ValueError)
+            elif self.num_band==8:
+                self.add_chemical_potential(μ=-0.008394419,add_to_base_model=True)    # to adjust for the offset in Carr's model
+            else: 
+                Logger.raiseException('\'num_band\' parameter for tbg can only be either 5 or 8.',exception=ValueError)
 
     # Specify hopping term for bare Hamiltonian; called in superclass when tbg_model_featured class is initiated
     def add_hopping(self):
@@ -146,7 +175,7 @@ class mlg_model():
                     t_real = np.real(matrix[m,n])
                     self.model.set_onsite(t_real, int(m), mode="reset")
     
-    def add_chemical_potential(self,μ):
+    def add_chemical_potential(self,μ,add_to_base_model=False):
 
         orbit_matrix_dict,spin_matrix,valley_matrix = self.tensorist.get_subspace_matrix_dicts(feature_mode='chemical potential')
         orbit_matrix = orbit_matrix_dict[(0,0)]   # chemical potential is onsite, so entry is only nonzero for Rx=Ry=0
@@ -166,14 +195,15 @@ class mlg_model():
             if m!=n:
                 Logger.raiseException('Chemical potential is not onsite. Check physics.',exception=ValueError)
             else:    #on site energy must be real
-                self.temp_model.set_onsite(value.real, m, mode='add')
+                if add_to_base_model:
+                    self.model.set_onsite(value.real, m, mode='add')
+                else:
+                    self.temp_model.set_onsite(value.real, m, mode='add')
 
-    
     def add_pairing(self,Δ,feature_mode):
 
         if not self.bdg_is_degen:
             Logger.raiseException('Need to set bdg_is_degen to True in order to include pairing.',exception=ValueError)
-
         orbit_matrix_dict,spin_matrix,valley_matrix = self.tensorist.get_subspace_matrix_dicts(feature_mode)
         
         # enlarge subspace in order of: orbit, spin, valley, bdg
@@ -182,7 +212,10 @@ class mlg_model():
             if self.spin_is_degen:
                 subspace = self.tensorist.tensor_to_spin(spin_matrix,subspace)
             if self.valley_is_degen:
-                subspace = self.tensorist.tensor_to_valley(subspace)
+                if feature_mode == "spin singlet, valley triplet τ1, C3 inter-sublattice 12 triplet":
+                    subspace = self.tensorist.tensor_to_valley_pairing_part_τ1_C3_intersublattice(valley_matrix,subspace)
+                else:
+                    subspace = self.tensorist.tensor_to_valley_pairing_part(valley_matrix,subspace)
             bdg_subspace_csr = self.tensorist.tensor_to_bdg_pairing_part(subspace)
 
             # input pairing to pythTB Hamiltonian
@@ -190,10 +223,66 @@ class mlg_model():
                 value = bdg_subspace_csr[m,n]*Δ
                 self.temp_model.set_hop(value, m, n, [ Rx, Ry],mode='reset')
 
+    def add_feature(self,feature_mode='hopping'):
 
-    def eval(self,feature_mode='hopping',path_points=['K','Γ','M','K'],eval_all_k=False,cal_eig_vectors=False,k_mesh_dim=(100,100)):
+        self.models=[]
 
-        sv.InputChecker()._check_path_points_(path_points)
+        if len(self.Δs)>1 and len(self.μs)>1:
+            self.model_dict={}
+            for Δ in self.Δs:
+                for μ in self.μs:
+                    self.temp_model = cp.deepcopy(self.model)
+                    self.add_chemical_potential(μ)
+                    self.add_pairing(Δ,feature_mode)
+                    self.model_dict[(Δ,μ)] = self.temp_model
+                
+        elif len(self.Δs) > 1:
+            for Δ in self.Δs:
+                self.temp_model = cp.deepcopy(self.model)
+                self.add_pairing(Δ,feature_mode)
+
+                if len(self.μs) == 1 and self.μs[0]!=0:
+                    μ = self.μs[0]
+                    self.add_chemical_potential(μ)
+
+                self.models.append(self.temp_model)
+            
+        elif len(self.μs) > 1:
+            for μ in self.μs:
+                self.temp_model = cp.deepcopy(self.model)
+                self.add_chemical_potential(μ)
+
+                if len(self.Δs) == 1 and self.Δs[0]!=0:
+                    Δ = self.Δs[0]
+                    self.add_pairing(Δ,feature_mode)
+
+                self.models.append(self.temp_model)
+            
+        else: 
+            self.temp_model = cp.deepcopy(self.model)
+
+            # nonzero single Δ
+            if len(self.Δs) == 1 and self.Δs[0]!=0:
+                Δ = self.Δs[0]
+                print('Create model for single Δ='+str(Δ))
+                self.add_pairing(Δ,feature_mode)
+            
+            # nonzero single μ
+            if len(self.μs) == 1 and self.μs[0]!=0:
+                μ = self.μs[0]
+                print('Create model for single μ='+str(μ))
+                self.add_chemical_potential(μ)
+                        
+        self.feature_mode = feature_mode
+
+
+    def eval(self,feature_mode='hopping',path_points=['K','Γ','M','K'],eval_all_k=False,cal_eig_vectors=False,k_mesh_dim=(100,100),time_stamp=False):
+
+        if time_stamp:
+            start_time = datetime.datetime.now().strftime("%m-%d %H:%M:%S")
+            print("Start datetime:",start_time)
+
+        serv.InputChecker()._check_path_points_(path_points)
         self.evaluator.set_kspace_path(path_points)
         self.models=[]
         self.evaluator.eval_all_k = eval_all_k
@@ -210,7 +299,7 @@ class mlg_model():
                     self.add_pairing(Δ,feature_mode)
                     self.model_dict[(Δ,μ)] = self.temp_model
                     
-            self.evaluator.eval_parameter_dict(self.model_dict,self.Δs,self.μs)
+            self.evaluator.eval_parameter_dict(self.model_dict,self.Δs,self.μs,time_stamp=time_stamp)
             self.plotter._axis = 'both'
 
         elif len(self.Δs) > 1:
@@ -223,7 +312,7 @@ class mlg_model():
                     self.add_chemical_potential(μ)
 
                 self.models.append(self.temp_model)
-            self.evaluator.eval_parameters(self.models,self.Δs)
+            self.evaluator.eval_parameters(self.models,self.Δs,time_stamp=time_stamp)
             self.plotter._axis = 'Δ'
 
         elif len(self.μs) > 1:
@@ -233,10 +322,10 @@ class mlg_model():
 
                 if len(self.Δs) == 1 and self.Δs[0]!=0:
                     Δ = self.Δs[0]
-                    self.add_pairing(Δ)
+                    self.add_pairing(Δ,feature_mode)
 
                 self.models.append(self.temp_model)
-            self.evaluator.eval_parameters(self.models,self.μs)
+            self.evaluator.eval_parameters(self.models,self.μs,time_stamp=time_stamp)
             self.plotter._axis = 'μ'
 
         else: 
@@ -245,19 +334,24 @@ class mlg_model():
             # nonzero single Δ
             if len(self.Δs) == 1 and self.Δs[0]!=0:
                 Δ = self.Δs[0]
+                print('Create model for single Δ='+str(Δ))
                 self.add_pairing(Δ,feature_mode)
             
             # nonzero single μ
             if len(self.μs) == 1 and self.μs[0]!=0:
                 μ = self.μs[0]
+                print('Create model for single μ='+str(μ))
                 self.add_chemical_potential(μ)
                         
-            self.evaluator.eval_base(self.temp_model)
+            self.evaluator.eval_base(self.temp_model,time_stamp=time_stamp)
             self.plotter._axis = 'none'
 
         self.feature_mode = feature_mode
+        if time_stamp:
+            end_time = datetime.datetime.now().strftime("%m-%d %H:%M:%S")
+            print("\nEnd datetime:", end_time)
 
-    def plot(self,xlim=None,ylim=None,plot_3D=False,plot_contour=False,zero_crossing_threshold=0.05):
+    def plot(self,xlim=None,ylim=None,zlim=None,plot_3D=False,plot_contour=False,zero_crossing_threshold=0.05):
 
         self.plotter.evaluator = self.evaluator
         if plot_contour:
@@ -267,15 +361,15 @@ class mlg_model():
             Logger.raiseException('Can only set one of \'plot_3D\' or \'plot_contour\' to be true.',exception=ValueError)
         
         if self.plotter._axis == 'none':
-            self.plotter.plot_base(xlim=xlim,ylim=ylim,plot_3D=plot_3D,plot_contour=plot_contour)
+            self.plotter.plot_base(xlim=xlim,ylim=ylim,zlim=zlim,plot_3D=plot_3D,plot_contour=plot_contour)
 
         elif self.plotter._axis == 'Δ':
-            self.plotter.plot_parameters(self.Δs,param_name='Δ',xlim=xlim,ylim=ylim,plot_3D=plot_3D,plot_contour=plot_contour)
+            self.plotter.plot_parameters(self.Δs,param_name='Δ',xlim=xlim,ylim=ylim,zlim=zlim,plot_3D=plot_3D,plot_contour=plot_contour)
 
         elif self.plotter._axis == 'μ':
-            self.plotter.plot_parameters(self.μs,param_name='μ',xlim=xlim,ylim=ylim,plot_3D=plot_3D,plot_contour=plot_contour)
+            self.plotter.plot_parameters(self.μs,param_name='μ',xlim=xlim,ylim=ylim,zlim=zlim,plot_3D=plot_3D,plot_contour=plot_contour)
         elif self.plotter._axis == 'both':
-            self.plotter.plot_parameter_dict(self.Δs,self.μs,xlim=xlim,ylim=ylim,plot_3D=plot_3D,plot_contour=plot_contour)
+            self.plotter.plot_parameter_dict(self.Δs,self.μs,xlim=xlim,ylim=ylim,zlim=zlim,plot_3D=plot_3D,plot_contour=plot_contour)
         else:
             Logger.raiseException('Wrong value for private value \'_axis\'. This should not be set manually.',exception=ValueError)
 
