@@ -1,3 +1,2 @@
-from tbg_module import ServiceClass as sv
-from tbg_module import tbg_model
+from bdg_module import ServiceClass as sv
 

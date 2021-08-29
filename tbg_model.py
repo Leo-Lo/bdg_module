@@ -7,8 +7,8 @@ from NearFieldOptics.Materials.material_types import * #For Logger, overkill
 from scipy.sparse import *
 import pickle
 import pdb
-from tbg_module import ServiceClass as sv
-from tbg_module import FeatureClass as feat
+from bdg_module import ServiceClass as sv
+from bdg_module import FeatureClass as feat
 
 
 # dictionary of numpy matrix representation of hopping Hamiltonian

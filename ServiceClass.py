@@ -40,11 +40,12 @@ def get_kspace_dict():
     M_minus = R*[[-0.5], [-0.5]]
     Kp = R*[[2./3.], [1./3.]]
     Kp_minus = R*[[-2./3.], [-1./3.]]
+    M_off = R*[[0.6], [0.5]]
     
-    K_in, M_in, Kp_in, Kpp_in,K_minus_in,M_minus_in,Kp_minus_in = _kpt_array_to_list_(K,M,Kp,Kpp,K_minus,M_minus,Kp_minus)
+    K_in, M_in, Kp_in, Kpp_in,K_minus_in,M_minus_in,Kp_minus_in,M_off_in = _kpt_array_to_list_(K,M,Kp,Kpp,K_minus,M_minus,Kp_minus,M_off)
     Γ = [0.0,0.0]
 
-    kspace_dict = {'K': K_in,'M':M_in,'Kp':Kp_in,'Kpp': Kpp_in,'-K': K_in,'-M':M_in,'-Kp':Kp_in,'Γ':Γ}
+    kspace_dict = {'K': K_in,'M':M_in,'Kp':Kp_in,'Kpp': Kpp_in,'-K': K_in,'-M':M_in,'-Kp':Kp_in,'Γ':Γ,'M_off':M_off_in}
     return kspace_dict
 
 def _kpt_array_to_list_(*args):
@@ -54,6 +55,37 @@ def _kpt_array_to_list_(*args):
         new_item = np.reshape(item,2).tolist()[0]
         new_args.append(new_item)
     return new_args
+
+def k_uniform_mesh_restricted(mesh_size,k_mesh_center,k_mesh_length):
+    """Create a uniform mesh of k points in a restricted region in Brillouin zone. 
+
+        Most of the code is adapted from the k_uniform_mesh method in the PythTB module.
+        Currently only for 2D, but it can be extended to other dimensions.
+        
+        Args:
+            mesh_size (2-tuple): the number of k points in the x and y directions
+            k_mesh_center (2-tuple): the x,y coordiante of the center of the square mesh of k points (in the reduced coordinates in k-space). Only used if restrict_k_mesh=True.
+            k_mesh_length (float): the side length of the square mesh of k points (in the reduced coordinates in k-space). Only used if restrict_k_mesh=True.
+    
+        Return:
+            k_vec: a N by 2 array of k points, in dictionary order (for each x value, going through all y values in the square mesh). N is the total number of grid points.
+    
+        """
+    dim1,dim2 = mesh_size
+    x_center,y_center = k_mesh_center
+
+    use_mesh=np.array(list(map(round,(dim1,dim2))),dtype=int)
+    k_vec=np.mgrid[0:use_mesh[0],0:use_mesh[1]]
+    # normalize the mesh
+    norm=np.tile(np.array(use_mesh/k_mesh_length,dtype=float),use_mesh)
+    norm=norm.reshape(use_mesh.tolist()+[2])
+    norm=norm.transpose([2,0,1])
+    k_vec=k_vec/norm
+    # final reshape
+    k_vec=k_vec.transpose([1,2,0]).reshape([use_mesh[0]*use_mesh[1],2])
+    k_vec=k_vec+[x_center,y_center]-[k_mesh_length/2,k_mesh_length/2]
+    return k_vec
+
 
 class InputChecker():
     def __init__(self,**kwargs) :
@@ -76,8 +108,8 @@ class InputChecker():
     
     def _check_numband_clean_(self):
         
-        if self.num_band != 5 and self.num_band != 8 and self.num_band != 2:
-            Logger.raiseException('Number of bands has to be either 5 or 8',exception=ValueError)
+        if self.num_band != 5 and self.num_band != 8 and self.num_band != 2 and self.num_band !=3:
+            Logger.raiseException('Number of bands has to be either 2,3,5 or 8',exception=ValueError)
             
     def _check_bool_clean_(self):
         
@@ -89,7 +121,7 @@ class InputChecker():
 
     def _check_path_points_(self,path_points):
 
-        point_list = ['K','M','Kp','Kpp','-K','-M','-Kp','Γ']
+        point_list = ['K','M','Kp','Kpp','-K','-M','-Kp','Γ','M_off']
         all_present = all(item in point_list for item in path_points)
         if not all_present:
             Logger.raiseException('Some points in path_points is not accepted. Only accept '+ str(point_list)+' as input.',exception = ValueError)
@@ -114,6 +146,10 @@ class Evaluator():
         self.k_node = None
         self.eval_all_k = None
         self.k_mesh_dim = None
+        self.restrict_k_mesh = None
+        self.k_mesh_center = None
+        self.k_mesh_length = None
+        self.feature_mode = None
 
         self.__dict__.update(kwargs)
     
@@ -135,10 +171,13 @@ class Evaluator():
         if self.eval_all_k:
             dim1,dim2 = self.k_mesh_dim
             k_vec = model.k_uniform_mesh([dim1,dim2])
+        elif self.restrict_k_mesh:
+            k_vec = k_uniform_mesh_restricted(self.k_mesh_dim,self.k_mesh_center,self.k_mesh_length)
         else:
             k_vec,k_dist,k_node = model.k_path(self.kspace_path, self.kspace_numsteps,report=False)
             self.k_dist = k_dist
             self.k_node = k_node
+        
         if self.cal_eig_vectors:
             (evals,evecs) = model.solve_all(k_vec, eig_vectors=True)
             self.evals = evals
@@ -165,16 +204,19 @@ class Evaluator():
             start = time.time()
 
             #control for floating point error in dictionary key values
-            Δ = round(Δ*1e5)/1e5
-            μ = round(μ*1e5)/1e5
+            Δ = round(Δ*1e7)/1e7
+            μ = round(μ*1e7)/1e7
 
             if self.eval_all_k:
                 dim1,dim2 = self.k_mesh_dim
                 k_vec = model.k_uniform_mesh([dim1,dim2])
+            elif self.restrict_k_mesh:
+                k_vec = k_uniform_mesh_restricted(self.k_mesh_dim,self.k_mesh_center,self.k_mesh_length)
             else:
                 k_vec,k_dist,k_node = model.k_path(self.kspace_path, self.kspace_numsteps,report=False)
                 self.k_dist = k_dist
                 self.k_node = k_node
+            
             if self.cal_eig_vectors:
                 (evals,evecs) = model.solve_all(k_vec, eig_vectors=True)
                 self.eval_dict[(Δ,μ)] = evals
@@ -199,6 +241,7 @@ class Evaluator():
     def eval_parameters(self,models,parameters,time_stamp=False):
 
         eval_list = []
+        evec_list = []
         for parameter,model in zip(parameters,models):
 
             start = time.time()
@@ -206,6 +249,8 @@ class Evaluator():
             if self.eval_all_k:
                 dim1,dim2 = self.k_mesh_dim
                 k_vec = model.k_uniform_mesh([dim1,dim2])
+            elif self.restrict_k_mesh:
+                k_vec = k_uniform_mesh_restricted(self.k_mesh_dim,self.k_mesh_center,self.k_mesh_length)
             else:
                 k_vec,k_dist,k_node = model.k_path(self.kspace_path, self.kspace_numsteps,report=False)
                 self.k_dist = k_dist
@@ -250,21 +295,22 @@ class Plotter():
         self.plot_3D = None
         self.plot_contour = None
         self.zero_crossing_threshold = None
+        self.feature_mode = None
 
-    # def update(self,evaluator):
+    def update(self,evaluator):
 
-    #     self.evaluator = evaluator
+        self.evaluator = evaluator
 
-        # self.evals = evaluator.evals
-        # self.eval_list = evaluator.eval_list
-        # self.eval_dict = evaluator.eval_dict 
-        # self.kspace_path = evaluator.kspace_path
-        # self.path_points = evaluator.path_points
-        # self.k_vec = evaluator.k_vec
-        # self.k_dist = evaluator.k_dist
-        # self.k_node = evaluator.k_node
-        # self.plot_3D = evaluator.plot_3D
-        # self.k_mesh_dim = evaluator.k_mesh_dim
+        self.evals = evaluator.evals
+        self.eval_list = evaluator.eval_list
+        self.eval_dict = evaluator.eval_dict 
+        self.kspace_path = evaluator.kspace_path
+        self.path_points = evaluator.path_points
+        self.k_vec = evaluator.k_vec
+        self.k_dist = evaluator.k_dist
+        self.k_node = evaluator.k_node
+        self.k_mesh_dim = evaluator.k_mesh_dim
+        self.feature_mode = evaluator.feature_mode
 
     def plot_base(self,plot_3D=False,plot_contour=False,xlim=None,ylim=None,zlim=None):
 
@@ -569,5 +615,196 @@ class Plotter():
         )
         return floatslider
 
+    def plot_BZ_boundary(self,ax):
+        # angle = np.pi
+        angle = 0
+        R = np.matrix([[np.cos(angle),-np.sin(angle)],[np.sin(angle),np.cos(angle)]])
+        factor,factor = self.evaluator.k_mesh_dim
+
+        K = R*[[1./3.], [2./3.]]*factor
+        K_minus = R*[[-1./3.], [-2./3.]]*factor
+        M = R*[[0.5], [0.5]]*factor
+        M_minus = R*[[-0.5], [-0.5]]*factor
+        Kp = R*[[2./3.], [1./3.]]*factor
+        Kp_minus = R*[[-2./3.], [-1./3.]]*factor
+        Kpp = R*[[1./3.],[-1./3.]]*factor
+        Kpp_minus = R*[[-1./3.],[1./3.]]*factor
+        Γ = R*[[0],[0]]*factor
+
+        pt_list = [K,Kp,Kpp,K_minus,Kp_minus,Kpp_minus,K]
+        x,y = zip(*pt_list)
+        x = np.reshape(np.array(list(x)),len(pt_list))
+        y = np.reshape(np.array(list(y)),len(pt_list))
+
+        y_sheered=y-x*np.sin(np.pi*30/180)
+        x_sheered=x*np.cos(np.pi*30/180)
+        
+        ax.plot(x_sheered,y_sheered,color='white',linewidth=1)
+
+    def process_evals(self,evals,N,d=4,plot_diff=False):
+        total_num_band = self.num_band * self.spin_degeneracy * self.valley_degeneracy * self.bdg_degeneracy
+        bot_band_index = int(total_num_band/2)-1
+        eval_bot = evals[bot_band_index]
+        eval_bot = np.reshape(eval_bot,(N,N))    
+        
+        if plot_diff:
+            top_band_index = int(total_num_band/2)
+            eval_top = evals[top_band_index]
+            eval_top = np.reshape(eval_top,(N,N)) 
+            eval_diff = np.abs(eval_top - eval_bot)
+            eval_final = np.tile(eval_diff,(d,d))
+        else:
+            eval_final = np.tile(eval_bot,(d,d))
+        return eval_final
+
+    def generate_XY_mesh(self,N,d=4):
+        # sheer to righten
+        X = Y= np.linspace(-N*d/2,N*d/2,N*d)
+        X_mid,Y_mid = np.meshgrid(X,Y)
+        Y_mesh=Y_mid-X_mid*np.sin(np.pi*30/180)
+        X_mesh=X_mid*np.cos(np.pi*30/180)
+        return X_mesh,Y_mesh
+
+    # generic plot contour method; for plotting the bottom band
+    # atuomatically re-express in standard k coordinates and tile the Brillouin zone
+    def contourf(self,evals,Δ,μ,plot_diff=False,vmax=-0.00005,vmin=-0.012,set_ticks=None,fontsize=20,save=False,\
+        folder_name_add_string="",file_name_add_string=""):
+    
+        d = 4 # duplicate number (for tiling)
+        N,N = self.evaluator.k_mesh_dim
+        eval_final = self.process_evals(evals,N=N,d=d,plot_diff=plot_diff)
+        X_mesh,Y_mesh = self.generate_XY_mesh(N=N,d=d)
+        
+        fig,ax1 = plt.subplots(figsize=[5,4])
+        
+        levels = np.linspace(vmin, vmax, 100)
+        if plot_diff:
+            over_cmap = cm.get_cmap('viridis_r')
+        else:
+            over_cmap = cm.get_cmap('viridis')
+        over_cmap.set_over('r')
+        # plot contour
+        im1 = ax1.contourf(X_mesh,Y_mesh,eval_final,origin='lower',aspect='auto',levels=levels,cmap=over_cmap,vmin=vmin,vmax=vmax)
+        #plot boundary of BZ
+        self.plot_BZ_boundary(ax1)
+        # plot nodes
+        if plot_diff:
+            ax1.contourf(X_mesh,Y_mesh,eval_final,origin='lower',aspect='auto',levels=[0.1*vmin,vmin],colors='r')
+        else:
+            ax1.contourf(X_mesh,Y_mesh,eval_final,origin='lower',aspect='auto',levels=[vmax,0.1*vmax],colors='r')
+
+        ax1.set_title('Δ='+str(Δ)+',μ='+str(μ),loc='center')
+        ax1.axes.xaxis.set_ticks([])
+        ax1.axes.yaxis.set_ticks([])
+        plt.xlabel('$k_x$', fontsize=fontsize)
+        plt.ylabel('$k_y$', fontsize=fontsize,rotation=0,labelpad=20)
+        cbar = fig.colorbar(im1, ax=ax1)
+        cbar.ax.tick_params(labelsize=fontsize)
+
+        if set_ticks != None:
+            tick_min, tick_max, num_tick = set_ticks
+            color_tick_list = np.linspace(tick_min,tick_max,num_tick)
+            cbar.set_ticks(color_tick_list)
+
+        factor = 0.75
+        plt.xlim([-N*factor,N*factor])
+        plt.ylim([-N*factor,N*factor])
+
+        if save:
+            import os
+            if not os.path.exists('Data ('+self.feature_mode+')'+folder_name_add_string):
+                os.makedirs('Data ('+self.feature_mode+')'+folder_name_add_string)
+            plt.savefig('Data ('+self.feature_mode+')'+folder_name_add_string+'/Contour plot (Δ='+str(Δ)+',μ='+str(μ)+')'\
+                +file_name_add_string+'.png',bbox_inches='tight',dpi=200)
+
+        return fig,ax1
 
     
+    """
+    this is a wrapper method for the _plot3D_ private method. This method contains useful reusing parameters for TBG and MLG.
+    style: for either TBG or MLG
+    zticks (array): an array of zticks. If zticks==[], will use the default for the style. If zticks==None, will use the default of matplotlib.
+
+    """
+    def plot3D(self,evals,Δ,μ,style,N,plot_diff=False,show_title=True,elev=None,fontsize=20,save=False,\
+        zbound=None,zticks=[],folder_name_add_string="",file_name_add_string=""):
+
+        if elev==None:
+            elev = 3
+
+        if style=='tbg':
+            unit_factor = 1000
+            if zbound==None:
+                zbound = [-0.01*unit_factor,0.01*unit_factor]
+            if zticks==[]:
+                zticks = [-0.01*unit_factor,-0.005*unit_factor,0,0.005*unit_factor,0.01*unit_factor]
+            fig,ax = self._plot3D_(evals,Δ,μ,N,plot_diff=plot_diff,show_title=show_title,\
+                unit_factor=unit_factor,zlabel="E (meV)",zbound=zbound,zticks=zticks,elev=elev,fontsize=fontsize)
+        elif style=='mlg':
+            if zticks==[]:
+                zticks = [-3,0,3]
+            fig,ax = self._plot3D_(evals,Δ,μ,N,plot_diff=plot_diff,show_title=show_title,\
+                unit_factor=1,zlabel="E (a.u.)",zbound=zbound,zticks=zticks,elev=elev,fontsize=fontsize)
+        else:
+            Logger.raiseException('Invalid style.',exception=ValueError)
+
+        if save:
+            import os
+            if not os.path.exists('Data ('+self.feature_mode+')'+folder_name_add_string):
+                os.makedirs('Data ('+self.feature_mode+')'+folder_name_add_string)
+            plt.savefig('Data ('+self.feature_mode+')'+folder_name_add_string+'/3D plot (Δ='+str(Δ)+',μ='+str(μ)+')'\
+                +file_name_add_string+'.png',bbox_inches='tight',dpi=200)
+
+        plt.show()
+
+        return fig,ax
+
+
+
+
+    def _plot3D_(self,evals,Δ,μ,N,plot_diff=False,show_title=True,zlabel="",unit_factor = 1000,zticks=None,zbound=None,elev=3,fontsize=20):
+    
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+        dim1,dim2 = N,N
+        X = np.arange(0,dim1,1)
+        Y = np.arange(0,dim2,1)
+        X, Y = np.meshgrid(X, Y)
+
+        if show_title:
+            ax.set_title('Δ='+str(Δ)+',μ='+str(μ),loc='right')
+        else:
+            print('Δ='+str(Δ)+',μ='+str(μ))
+
+        if plot_diff:
+            i = int(len(evals)/2-1)
+            j = int(len(evals)/2)
+            diff = np.abs(evals[j] - evals[i])
+            diff = np.reshape(diff,(dim1,dim2))
+            surf = ax.plot_surface(X, Y, diff, cmap=cm.viridis,linewidth=0, antialiased=False)
+
+            ref = np.zeros([dim1,dim2])
+            ref_surf = ax.plot_surface(X, Y, ref, cmap=cm.viridis,linewidth=0, antialiased=False)
+            ax.view_init(elev=-3, azim=59.)
+        else: 
+            for Z in evals:
+                Z = np.reshape(Z,(dim1,dim2))
+                surf = ax.plot_surface(X, Y, Z*unit_factor, cmap=cm.viridis,linewidth=0, antialiased=False)
+            ax.view_init(elev=elev, azim=59.)
+    #   
+        if zbound!=None:
+            ax.set_zbound(zbound)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        if zticks!=None:
+            ax.set_zticks(zticks)
+        for t in ax.zaxis.get_major_ticks(): 
+            t.label.set_fontsize(fontsize)
+        ax.set_zlabel(zlabel)
+
+        ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+        ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+        ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+
+        return fig,ax
+

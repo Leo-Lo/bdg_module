@@ -119,161 +119,6 @@ class Tensorist():
                                     (0,0): orbit_matrix_intra_csr,
                                     }
 
-                elif feature_mode == "spin singlet, valley triplet τ1, intra-unit-cell inter-sublattice triplet σ1":
-
-                    if self.num_band != 2:
-                        Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
-
-                    if self.spin_is_degen:
-                        spin_matrix = np.matrix([[0,1],
-                                                 [-1,0]])
-                    else:
-                        spin_matrix = 1
-
-                    if not self.valley_is_degen:
-                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
-                    
-                    valley_matrix = np.matrix([
-                                               [ 0, 1],
-                                               [ 1, 0]
-                                               ])
-                    use_default_valley = False
-
-                    orbit_matrix_intra = np.matrix([
-                                               [ 0, 1],
-                                               [ 1, 0]
-                                               ])
-
-                    orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
-
-                    orbit_dict = {
-                                    (0,0): orbit_matrix_intra_csr,
-                                    }
-                
-                elif feature_mode == "spin singlet, valley triplet τ0, intra-unit-cell inter-sublattice triplet σ1":
-
-                    if self.num_band != 2:
-                        Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
-
-                    if self.spin_is_degen:
-                        spin_matrix = np.matrix([[0,1],
-                                                 [-1,0]])
-                    else:
-                        spin_matrix = 1
-
-                    if not self.valley_is_degen:
-                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
-                    
-                    valley_matrix = np.matrix([
-                                               [ 1, 0],
-                                               [ 0, 1]
-                                               ])
-                    use_default_valley = False
-
-                    orbit_matrix_intra = np.matrix([
-                                               [ 0, 1],
-                                               [ 1, 0]
-                                               ])
-
-                    orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
-
-                    orbit_dict = {
-                                    (0,0): orbit_matrix_intra_csr,
-                                    }
-
-                elif feature_mode == "spin singlet, valley triplet τ1, intra-unit-cell onsite triplet σ0":
-
-                    if self.num_band != 2:
-                        Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
-
-                    if self.spin_is_degen:
-                        spin_matrix = np.matrix([[0,1],
-                                                 [-1,0]])
-                    else:
-                        spin_matrix = 1
-
-                    if not self.valley_is_degen:
-                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
-                    
-                    valley_matrix = np.matrix([
-                                               [ 0, 1],
-                                               [ 1, 0]
-                                               ])
-                    use_default_valley = False
-
-                    orbit_matrix_intra = np.matrix([
-                                               [ 1, 0],
-                                               [ 0, 1]
-                                               ])
-
-                    orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
-
-                    orbit_dict = {
-                                    (0,0): orbit_matrix_intra_csr,
-                                    }
-
-                elif feature_mode == "spin singlet, valley triplet τ0, intra-unit-cell onsite triplet σ0":
-
-                    if self.num_band != 2:
-                        Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
-
-                    if self.spin_is_degen:
-                        spin_matrix = np.matrix([[0,1],
-                                                 [-1,0]])
-                    else:
-                        spin_matrix = 1
-
-                    if not self.valley_is_degen:
-                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
-                    
-                    valley_matrix = np.matrix([
-                                               [ 1, 0],
-                                               [ 0, 1]
-                                               ])
-                    use_default_valley = False
-
-                    orbit_matrix_intra = np.matrix([
-                                               [ 1, 0],
-                                               [ 0, 1]
-                                               ])
-
-                    orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
-
-                    orbit_dict = {
-                                    (0,0): orbit_matrix_intra_csr,
-                                    }
-
-                elif feature_mode == "spin singlet, valley singlet, intra-unit-cell inter-sublattice singlet":
-
-                    if self.num_band != 2:
-                        Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
-
-                    if self.spin_is_degen:
-                        spin_matrix = np.matrix([[0,1],
-                                                 [-1,0]])
-                    else:
-                        spin_matrix = 1
-
-                    if not self.valley_is_degen:
-                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
-                    
-                    valley_matrix = np.matrix([
-                                               [ 0, 1],
-                                               [-1, 0]
-                                               ])
-                    use_default_valley = False
-
-                    orbit_matrix_intra = np.matrix([
-                                               [ 0, 1],
-                                               [-1, 0]
-                                               ])
-
-                    orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
-
-                    orbit_dict = {
-                                    (0,0): orbit_matrix_intra_csr,
-                                    }
-                
                 elif feature_mode == "monolayer inter-sublattice spin singlet (3 fold symmetric)":
 
                     if self.num_band != 2:
@@ -306,10 +151,47 @@ class Tensorist():
 
                     orbit_dict = {
                                     ( 0, 0): orbit_matrix_both_csr,
-                                    ( 1, 0): orbit_matrix_up_csr,
-                                    (-1, 0): orbit_matrix_down_csr,
-                                    ( 0, 1): orbit_matrix_up_csr,
-                                    ( 0,-1): orbit_matrix_down_csr
+                                    ( 1, 0): orbit_matrix_down_csr,
+                                    (-1, 0): orbit_matrix_up_csr,
+                                    ( 0, 1): orbit_matrix_down_csr,
+                                    ( 0,-1): orbit_matrix_up_csr
+                                    }
+                elif feature_mode == "monolayer inter-sublattice spin singlet (3 fold chiral clockwise)":
+
+                    if self.num_band != 2:
+                        Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    orbit_matrix_both = np.matrix([
+                                               [ 0, 1],
+                                               [ 1, 0]
+                                               ])
+
+                    orbit_matrix_up = np.matrix([
+                                               [ 0, 1],
+                                               [ 0, 0]
+                                               ])
+
+                    orbit_matrix_down = np.matrix([
+                                               [ 0, 0],
+                                               [ 1, 0]
+                                               ])
+
+                    orbit_matrix_both_csr = csr_matrix(orbit_matrix_both,dtype='complex64')
+                    orbit_matrix_up_csr = csr_matrix(orbit_matrix_up,dtype='complex64')
+                    orbit_matrix_down_csr = csr_matrix(orbit_matrix_down,dtype='complex64')
+
+                    orbit_dict = {
+                                    ( 0, 0): orbit_matrix_both_csr,
+                                    ( 1, 0): orbit_matrix_down_csr*np.exp(1j*2*np.pi/3),
+                                    (-1, 0): orbit_matrix_up_csr*np.exp(1j*2*np.pi/3),
+                                    ( 0, 1): orbit_matrix_down_csr*np.exp(1j*4*np.pi/3),
+                                    ( 0,-1): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3)
                                     }
 
                 elif feature_mode == "monolayer onsite spin singlet":
@@ -349,6 +231,159 @@ class Tensorist():
                     orbit_dict = {
                                     (0,0): orbit_matrix,
                                     }
+                
+                # deprecated pairing mode: valley degree of freedom just duplicate the spectrum, as the hopping parameters are all real
+                elif feature_mode == "spin singlet, valley triplet τ1, intra-unit-cell inter-sublattice triplet σ1":
+
+                    if self.num_band != 2:
+                        Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    
+                    valley_matrix = np.matrix([
+                                               [ 0, 1],
+                                               [ 1, 0]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_intra = np.matrix([
+                                               [ 0, 1],
+                                               [ 1, 0]
+                                               ])
+
+                    orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
+
+                    orbit_dict = {
+                                    (0,0): orbit_matrix_intra_csr,
+                                    }
+                elif feature_mode == "spin singlet, valley triplet τ0, intra-unit-cell inter-sublattice triplet σ1":
+
+                    if self.num_band != 2:
+                        Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    
+                    valley_matrix = np.matrix([
+                                               [ 1, 0],
+                                               [ 0, 1]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_intra = np.matrix([
+                                               [ 0, 1],
+                                               [ 1, 0]
+                                               ])
+
+                    orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
+
+                    orbit_dict = {
+                                    (0,0): orbit_matrix_intra_csr,
+                                    }
+                elif feature_mode == "spin singlet, valley triplet τ1, intra-unit-cell onsite triplet σ0":
+
+                    if self.num_band != 2:
+                        Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    
+                    valley_matrix = np.matrix([
+                                               [ 0, 1],
+                                               [ 1, 0]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_intra = np.matrix([
+                                               [ 1, 0],
+                                               [ 0, 1]
+                                               ])
+
+                    orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
+
+                    orbit_dict = {
+                                    (0,0): orbit_matrix_intra_csr,
+                                    }
+                elif feature_mode == "spin singlet, valley triplet τ0, intra-unit-cell onsite triplet σ0":
+
+                    if self.num_band != 2:
+                        Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    
+                    valley_matrix = np.matrix([
+                                               [ 1, 0],
+                                               [ 0, 1]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_intra = np.matrix([
+                                               [ 1, 0],
+                                               [ 0, 1]
+                                               ])
+
+                    orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
+
+                    orbit_dict = {
+                                    (0,0): orbit_matrix_intra_csr,
+                                    }
+                elif feature_mode == "spin singlet, valley singlet, intra-unit-cell inter-sublattice singlet":
+
+                    if self.num_band != 2:
+                        Logger.raiseException('Can only use this feature mode for the monolayer case, i.e. self.num_band = 2.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    
+                    valley_matrix = np.matrix([
+                                               [ 0, 1],
+                                               [-1, 0]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_intra = np.matrix([
+                                               [ 0, 1],
+                                               [-1, 0]
+                                               ])
+
+                    orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
+
+                    orbit_dict = {
+                                    (0,0): orbit_matrix_intra_csr,
+                                    }
+                
                 else: 
                     Logger.raiseException('Invalid feature mode for self.layer_material=monolayer graphene.', exception=ValueError)
 
@@ -386,6 +421,7 @@ class Tensorist():
 
                     orbit_dict = {(0,0): orbit_matrix}
 
+                ##### pairing with no explicit valley degree of freedom ######
                 elif feature_mode == "spin singlet inter-sublattice intra-unit-cell 12":
                     if self.spin_is_degen:
                         spin_matrix = np.matrix([[0,1],
@@ -417,7 +453,6 @@ class Tensorist():
                         Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
 
                     orbit_dict = {(0,0): orbit_matrix}
-
                 elif feature_mode == "spin singlet inter-sublattice intra-unit-cell 11 22":
                     if self.spin_is_degen:
                         spin_matrix = np.matrix([[0,1],
@@ -449,10 +484,85 @@ class Tensorist():
                         Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
 
                     orbit_dict = {(0,0): orbit_matrix}
+                elif feature_mode == "(C3) spin singlet, intra-sublattice triplet σ0":# this pairing is the sub-block from intra-valley pairing
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
 
-                ##### intra-unit cell pairing ######
+                    orbit_matrix_both = np.matrix([
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_up = np.matrix([
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_down = np.matrix([
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_both_csr = csr_matrix(orbit_matrix_both,dtype='complex64')
+                    orbit_matrix_up_csr = csr_matrix(orbit_matrix_up,dtype='complex64')
+                    orbit_matrix_down_csr = csr_matrix(orbit_matrix_down,dtype='complex64')
+
+                    orbit_dict = {
+                                    ( 1, 0): orbit_matrix_both_csr,
+                                    (-1, 0): orbit_matrix_both_csr,
+                                    (-1, 1): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3),
+                                    ( 1,-1): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3),
+                                    ( 0,-1): orbit_matrix_up_csr*np.exp(1j*8*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3),
+                                    ( 0, 1): orbit_matrix_up_csr*np.exp(1j*8*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3)
+                                    }
+                elif feature_mode == "(intra-unit-cell) spin singlet, intra-sublattice triplet σ0":# this pairing is the sub-block from intra-valley pairing
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if self.num_band == 5:
+                        orbit_matrix = np.matrix([
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+                    elif self.num_band == 8:
+                        orbit_matrix = np.matrix([
+                                                [ 1, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+                                                ])
+                    
+                    else:
+                        Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
+
+                    orbit_dict = {(0,0): orbit_matrix}
+                    
+
+                ##### pairing with explicit valley degree of freedom ######
                 # valley triplet inter-sublattice
-                elif feature_mode == "spin singlet, valley triplet τ1, intra-unit-cell inter-sublattice 12 triplet":
+                elif feature_mode == "(intra-unit-cell) spin singlet, inter-valley triplet τ1, inter-sublattice triplet σ1":
                     if self.spin_is_degen:
                         spin_matrix = np.matrix([[0,1],
                                                  [-1,0]])
@@ -491,7 +601,7 @@ class Tensorist():
                         Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
 
                     orbit_dict = {(0,0): orbit_matrix}
-                elif feature_mode == "spin singlet, valley triplet τ0, intra-unit-cell inter-sublattice 12 triplet":
+                elif feature_mode == "(intra-unit-cell) spin singlet, intra-valley triplet τ0, inter-sublattice triplet σ1":
                     if self.spin_is_degen:
                         spin_matrix = np.matrix([[0,1],
                                                  [-1,0]])
@@ -530,7 +640,7 @@ class Tensorist():
                         Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
 
                     orbit_dict = {(0,0): orbit_matrix}
-                elif feature_mode == "spin singlet, valley triplet τ3, intra-unit-cell inter-sublattice 12 triplet":
+                elif feature_mode == "(intra-unit-cell) spin singlet, intra-valley triplet τ3, inter-sublattice triplet σ1":
                     if self.spin_is_degen:
                         spin_matrix = np.matrix([[0,1],
                                                  [-1,0]])
@@ -570,7 +680,7 @@ class Tensorist():
 
                     orbit_dict = {(0,0): orbit_matrix}
                 # valley triplet intra-sublattice
-                elif feature_mode == "spin singlet, valley triplet τ1, intra-unit-cell intra-sublattice 1122 triplet":
+                elif feature_mode == "(intra-unit-cell) spin singlet, inter-valley triplet τ1, intra-sublattice triplet σ0":
                     if self.spin_is_degen:
                         spin_matrix = np.matrix([[0,1],
                                                  [-1,0]])
@@ -609,7 +719,7 @@ class Tensorist():
                         Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
 
                     orbit_dict = {(0,0): orbit_matrix}
-                elif feature_mode == "spin singlet, valley triplet τ0, intra-unit-cell intra-sublattice 1122 triplet":
+                elif feature_mode == "(intra-unit-cell) spin singlet, intra-valley triplet τ0, intra-sublattice triplet σ0":
                     if self.spin_is_degen:
                         spin_matrix = np.matrix([[0,1],
                                                  [-1,0]])
@@ -648,7 +758,7 @@ class Tensorist():
                         Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
 
                     orbit_dict = {(0,0): orbit_matrix}
-                elif feature_mode == "spin singlet, valley triplet τ3, intra-unit-cell intra-sublattice 1122 triplet":
+                elif feature_mode == "(intra-unit-cell) spin singlet, intra-valley triplet τ3, intra-sublattice triplet σ0":
                     if self.spin_is_degen:
                         spin_matrix = np.matrix([[0,1],
                                                  [-1,0]])
@@ -688,7 +798,7 @@ class Tensorist():
 
                     orbit_dict = {(0,0): orbit_matrix}
                 # valley singlet
-                elif feature_mode == "spin singlet, valley singlet, intra-unit-cell 12 inter-sublattice singlet":
+                elif feature_mode == "(intra-unit-cell) spin singlet, inter-valley singlet iτ2, inter-sublattice singlet iσ2":
                     if self.spin_is_degen:
                         spin_matrix = np.matrix([[0,1],
                                                  [-1,0]])
@@ -728,9 +838,61 @@ class Tensorist():
 
                     orbit_dict = {(0,0): orbit_matrix}
 
-                ##### C3 inter-sublattice pairing ######
-                # inter-valley
-                elif feature_mode == "spin singlet, valley triplet τ1, C3 inter-sublattice 12 triplet":
+                ##### C3 pairing ######
+                elif feature_mode == "(C3) spin singlet, inter-valley singlet iτ2, inter-sublattice singlet iσ2":
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[ 0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    # the valley_matrix will not be used; a special tensor to valley function is used instead
+                    valley_matrix = np.matrix([
+                                               [ 0, 1],
+                                               [-1, 0]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_both = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [-1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_up = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_down = np.matrix([
+                                                [ 0, 0, 0, 0, 0],
+                                                [-1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_both_csr = csr_matrix(orbit_matrix_both,dtype='complex64')
+                    orbit_matrix_up_csr = csr_matrix(orbit_matrix_up,dtype='complex64')
+                    orbit_matrix_down_csr = csr_matrix(orbit_matrix_down,dtype='complex64')
+
+                    orbit_dict = {
+                                    ( 1, 0): orbit_matrix_both_csr,
+                                    (-1, 0): orbit_matrix_both_csr,
+                                    (-1, 1): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3),
+                                    ( 1,-1): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3),
+                                    ( 0,-1): orbit_matrix_up_csr*np.exp(1j*8*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3),
+                                    ( 0, 1): orbit_matrix_up_csr*np.exp(1j*8*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3)
+                                    }
+                elif feature_mode == "(C3) spin singlet, inter-valley triplet τ1, inter-sublattice triplet σ1":
 
                     if self.spin_is_degen:
                         spin_matrix = np.matrix([[0,1],
@@ -740,7 +902,7 @@ class Tensorist():
 
                     if not self.valley_is_degen:
                         Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
-                    # only the upper left corner; the lower right will be filled at the valley tensor operation
+                    # the valley_matrix will not be used; a special tensor to valley function is used instead
                     valley_matrix = np.matrix([
                                                [ 0, 1],
                                                [ 0, 0]
@@ -776,14 +938,14 @@ class Tensorist():
                     orbit_matrix_down_csr = csr_matrix(orbit_matrix_down,dtype='complex64')
 
                     orbit_dict = {
-                                    ( 0, 0): orbit_matrix_both_csr,
-                                    ( 1, 0): orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3),
-                                    ( 0, 1): orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3),
-                                    (-1, 0): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3),
-                                    ( 0,-1): orbit_matrix_up_csr*np.exp(1j*8*np.pi/3)
+                                    ( 1, 0): orbit_matrix_both_csr,
+                                    (-1, 0): orbit_matrix_both_csr,
+                                    (-1, 1): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3),
+                                    ( 1,-1): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3),
+                                    ( 0,-1): orbit_matrix_up_csr*np.exp(1j*8*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3),
+                                    ( 0, 1): orbit_matrix_up_csr*np.exp(1j*8*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3)
                                     }
-                # intra-valley
-                elif feature_mode == "spin singlet, valley triplet τ0, C3 intra-sublattice 1122 triplet":
+                elif feature_mode == "(C3) spin singlet, inter-valley triplet τ1, intra-sublattice triplet σ0":
                     if self.spin_is_degen:
                         spin_matrix = np.matrix([[0,1],
                                                  [-1,0]])
@@ -792,40 +954,51 @@ class Tensorist():
 
                     if not self.valley_is_degen:
                         Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    # the valley_matrix will not be used; a special tensor to valley function is used instead
                     valley_matrix = np.matrix([
-                                               [ 1, 0],
-                                               [ 0, 1]
+                                               [ 0, 1],
+                                               [ 0, 0]
                                                ])
                     use_default_valley = False
 
-                    if self.num_band == 5:
-                        orbit_matrix = np.matrix([
+                    orbit_matrix_both = np.matrix([
                                                 [ 1, 0, 0, 0, 0],
                                                 [ 0, 1, 0, 0, 0],
                                                 [ 0, 0, 0, 0, 0],
                                                 [ 0, 0, 0, 0, 0],
                                                 [ 0, 0, 0, 0, 0]
                                                 ])
-                    elif self.num_band == 8:
-                        orbit_matrix = np.matrix([
-                                                [ 1, 0, 0, 0, 0, 0, 0, 0],
-                                                [ 0, 1, 0, 0, 0, 0, 0, 0],
-                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
-                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
-                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
-                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
-                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
-                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
+
+                    orbit_matrix_up = np.matrix([
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
                                                 ])
-                    
-                    else:
-                        Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
 
-                    orbit_matrix_csr = csr_matrix(orbit_matrix,dtype='complex64')
-                    C3_coefficient = 1 + np.exp(1j*4*np.pi/3) + np.exp(1j*8*np.pi/3)
-                    orbit_dict = {(0,0): orbit_matrix_csr*C3_coefficient}
+                    orbit_matrix_down = np.matrix([
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
 
-                elif feature_mode == "spin singlet, valley triplet τ0, C3 intra-sublattice 1122 triplet (trivial)":
+                    orbit_matrix_both_csr = csr_matrix(orbit_matrix_both,dtype='complex64')
+                    orbit_matrix_up_csr = csr_matrix(orbit_matrix_up,dtype='complex64')
+                    orbit_matrix_down_csr = csr_matrix(orbit_matrix_down,dtype='complex64')
+
+                    orbit_dict = {
+                                    ( 1, 0): orbit_matrix_both_csr,
+                                    (-1, 0): orbit_matrix_both_csr,
+                                    (-1, 1): orbit_matrix_both_csr,
+                                    ( 1,-1): orbit_matrix_both_csr,
+                                    ( 0,-1): orbit_matrix_both_csr,
+                                    ( 0, 1): orbit_matrix_both_csr
+                                    }
+                elif feature_mode == "(C3) spin singlet, intra-valley triplet τ0, inter-sublattice triplet σ1":
+
                     if self.spin_is_degen:
                         spin_matrix = np.matrix([[0,1],
                                                  [-1,0]])
@@ -834,38 +1007,583 @@ class Tensorist():
 
                     if not self.valley_is_degen:
                         Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    # the valley_matrix will not be used; a special tensor to valley function is used instead
                     valley_matrix = np.matrix([
                                                [ 1, 0],
-                                               [ 0, 1]
+                                               [ 0, 0]
                                                ])
                     use_default_valley = False
 
-                    if self.num_band == 5:
-                        orbit_matrix = np.matrix([
+                    orbit_matrix_both = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_up = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_down = np.matrix([
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_both_csr = csr_matrix(orbit_matrix_both,dtype='complex64')
+                    orbit_matrix_up_csr = csr_matrix(orbit_matrix_up,dtype='complex64')
+                    orbit_matrix_down_csr = csr_matrix(orbit_matrix_down,dtype='complex64')
+
+                    orbit_dict = {
+                                    ( 1, 0): orbit_matrix_both_csr,
+                                    (-1, 0): orbit_matrix_both_csr,
+                                    (-1, 1): orbit_matrix_both_csr,
+                                    ( 1,-1): orbit_matrix_both_csr,
+                                    ( 0,-1): orbit_matrix_both_csr,
+                                    ( 0, 1): orbit_matrix_both_csr
+                                    }
+                elif feature_mode == "(C3) spin singlet, intra-valley triplet τ0, intra-sublattice triplet σ0":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    # the valley_matrix will not be used; a special tensor to valley function is used instead
+                    valley_matrix = np.matrix([
+                                               [ 1, 0],
+                                               [ 0, 0]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_both = np.matrix([
                                                 [ 1, 0, 0, 0, 0],
                                                 [ 0, 1, 0, 0, 0],
                                                 [ 0, 0, 0, 0, 0],
                                                 [ 0, 0, 0, 0, 0],
                                                 [ 0, 0, 0, 0, 0]
                                                 ])
-                    elif self.num_band == 8:
-                        orbit_matrix = np.matrix([
-                                                [ 1, 0, 0, 0, 0, 0, 0, 0],
-                                                [ 0, 1, 0, 0, 0, 0, 0, 0],
-                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
-                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
-                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
-                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
-                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
-                                                [ 0, 0, 0, 0, 0, 0, 0, 0],
-                                                ])
-                    
-                    else:
-                        Logger.raiseException('Invalid value of num_band, can only be 5 or 8',exception=ValueError)
 
-                    orbit_matrix_csr = csr_matrix(orbit_matrix,dtype='complex64')
-                    C3_coefficient = 1 
-                    orbit_dict = {(0,0): orbit_matrix_csr*C3_coefficient}
+                    orbit_matrix_up = np.matrix([
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_down = np.matrix([
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_both_csr = csr_matrix(orbit_matrix_both,dtype='complex64')
+                    orbit_matrix_up_csr = csr_matrix(orbit_matrix_up,dtype='complex64')
+                    orbit_matrix_down_csr = csr_matrix(orbit_matrix_down,dtype='complex64')
+
+                    orbit_dict = {
+                                    ( 1, 0): orbit_matrix_both_csr,
+                                    (-1, 0): orbit_matrix_both_csr,
+                                    (-1, 1): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3),
+                                    ( 1,-1): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3),
+                                    ( 0,-1): orbit_matrix_up_csr*np.exp(1j*8*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3),
+                                    ( 0, 1): orbit_matrix_up_csr*np.exp(1j*8*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3)
+                                    }
+
+                ##### 3-fold chiral pairing ######
+                elif feature_mode == "(chiral) spin singlet, inter-valley triplet τ1, inter-sublattice triplet σ1":
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    # the valley_matrix will not be used; a special tensor to valley function is used instead
+                    valley_matrix = np.matrix([
+                                               [ 0, 1],
+                                               [ 0, 0]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_both = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_up = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_down = np.matrix([
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_both_csr = csr_matrix(orbit_matrix_both,dtype='complex64')
+                    orbit_matrix_up_csr = csr_matrix(orbit_matrix_up,dtype='complex64')
+                    orbit_matrix_down_csr = csr_matrix(orbit_matrix_down,dtype='complex64')
+
+                    orbit_dict = {
+                                    ( 1, 0): orbit_matrix_both_csr,
+                                    (-1, 0): orbit_matrix_both_csr,
+                                    (-1, 1): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3)*np.exp(1j*2*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3)*np.exp(-1j*2*np.pi/3),
+                                    ( 1,-1): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3)*np.exp(1j*2*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3)*np.exp(-1j*2*np.pi/3),
+                                    ( 0,-1): orbit_matrix_up_csr*np.exp(1j*8*np.pi/3)*np.exp(1j*4*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3)*np.exp(-1j*4*np.pi/3),
+                                    ( 0, 1): orbit_matrix_up_csr*np.exp(1j*8*np.pi/3)*np.exp(1j*4*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3)*np.exp(-1j*4*np.pi/3)
+                                    }
+                elif feature_mode == "(chiral) spin singlet, inter-valley triplet τ1, intra-sublattice triplet σ0":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    # the valley_matrix will not be used; a special tensor to valley function is used instead
+                    valley_matrix = np.matrix([
+                                               [ 0, 1],
+                                               [ 0, 0]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_both = np.matrix([
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_up = np.matrix([
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_down = np.matrix([
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_both_csr = csr_matrix(orbit_matrix_both,dtype='complex64')
+                    orbit_matrix_up_csr = csr_matrix(orbit_matrix_up,dtype='complex64')
+                    orbit_matrix_down_csr = csr_matrix(orbit_matrix_down,dtype='complex64')
+
+                    orbit_dict = {
+                                    ( 1, 0): orbit_matrix_both_csr,
+                                    (-1, 0): orbit_matrix_both_csr,
+                                    (-1, 1): orbit_matrix_both_csr*np.exp(1j*2*np.pi/3),
+                                    ( 1,-1): orbit_matrix_both_csr*np.exp(1j*2*np.pi/3),
+                                    ( 0,-1): orbit_matrix_both_csr*np.exp(1j*4*np.pi/3),
+                                    ( 0, 1): orbit_matrix_both_csr*np.exp(1j*4*np.pi/3)
+                                    }
+                elif feature_mode == "(chiral) spin singlet, intra-valley triplet τ0, inter-sublattice triplet σ1":
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    # the valley_matrix will not be used; a special tensor to valley function is used instead
+                    valley_matrix = np.matrix([
+                                               [ 1, 0],
+                                               [ 0, 0]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_both = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_up = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_down = np.matrix([
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_both_csr = csr_matrix(orbit_matrix_both,dtype='complex64')
+                    orbit_matrix_up_csr = csr_matrix(orbit_matrix_up,dtype='complex64')
+                    orbit_matrix_down_csr = csr_matrix(orbit_matrix_down,dtype='complex64')
+
+                    orbit_dict = {
+                                    ( 1, 0): orbit_matrix_both_csr,
+                                    (-1, 0): orbit_matrix_both_csr,
+                                    (-1, 1): orbit_matrix_both_csr*np.exp(1j*2*np.pi/3),
+                                    ( 1,-1): orbit_matrix_both_csr*np.exp(1j*2*np.pi/3),
+                                    ( 0,-1): orbit_matrix_both_csr*np.exp(1j*4*np.pi/3),
+                                    ( 0, 1): orbit_matrix_both_csr*np.exp(1j*4*np.pi/3)
+                                    }
+                elif feature_mode == "(chiral) spin singlet, intra-valley triplet τ0, intra-sublattice triplet σ0":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    # the valley_matrix will not be used; a special tensor to valley function is used instead
+                    valley_matrix = np.matrix([
+                                               [ 1, 0],
+                                               [ 0, 0]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_both = np.matrix([
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_up = np.matrix([
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_down = np.matrix([
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_both_csr = csr_matrix(orbit_matrix_both,dtype='complex64')
+                    orbit_matrix_up_csr = csr_matrix(orbit_matrix_up,dtype='complex64')
+                    orbit_matrix_down_csr = csr_matrix(orbit_matrix_down,dtype='complex64')
+
+                    orbit_dict = {
+                                    ( 1, 0): orbit_matrix_both_csr,
+                                    (-1, 0): orbit_matrix_both_csr,
+                                    (-1, 1): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3)*np.exp(1j*2*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3)*np.exp(-1j*2*np.pi/3),
+                                    ( 1,-1): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3)*np.exp(1j*2*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3)*np.exp(-1j*2*np.pi/3),
+                                    ( 0,-1): orbit_matrix_up_csr*np.exp(1j*8*np.pi/3)*np.exp(1j*4*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3)*np.exp(-1j*4*np.pi/3),
+                                    ( 0, 1): orbit_matrix_up_csr*np.exp(1j*8*np.pi/3)*np.exp(1j*4*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3)*np.exp(-1j*4*np.pi/3)
+                                    }
+
+                ##### 3-fold total chiral pairing ######
+                elif feature_mode == "(total chiral) spin singlet, inter-valley triplet τ1, inter-sublattice triplet σ1":
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    # the valley_matrix will not be used; a special tensor to valley function is used instead
+                    valley_matrix = np.matrix([
+                                               [ 0, 1],
+                                               [ 0, 0]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_both = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_up = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_down = np.matrix([
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_both_csr = csr_matrix(orbit_matrix_both,dtype='complex64')
+                    orbit_matrix_up_csr = csr_matrix(orbit_matrix_up,dtype='complex64')
+                    orbit_matrix_down_csr = csr_matrix(orbit_matrix_down,dtype='complex64')
+
+                    orbit_dict = {
+                                    ( 1, 0): orbit_matrix_both_csr,
+                                    (-1, 0): orbit_matrix_both_csr,
+                                    (-1, 1): (orbit_matrix_up_csr*np.exp(1j*4*np.pi/3) + orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3))*np.exp(1j*2*np.pi/3),
+                                    ( 1,-1): (orbit_matrix_up_csr*np.exp(1j*4*np.pi/3) + orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3))*np.exp(1j*2*np.pi/3),
+                                    ( 0,-1): (orbit_matrix_up_csr*np.exp(1j*8*np.pi/3) + orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3))*np.exp(1j*4*np.pi/3),
+                                    ( 0, 1): (orbit_matrix_up_csr*np.exp(1j*8*np.pi/3) + orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3))*np.exp(1j*4*np.pi/3)
+                                    }
+                elif feature_mode == "(total chiral) spin singlet, intra-valley triplet τ0, intra-sublattice triplet σ0":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    # the valley_matrix will not be used; a special tensor to valley function is used instead
+                    valley_matrix = np.matrix([
+                                               [ 1, 0],
+                                               [ 0, 0]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_both = np.matrix([
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_up = np.matrix([
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_down = np.matrix([
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_both_csr = csr_matrix(orbit_matrix_both,dtype='complex64')
+                    orbit_matrix_up_csr = csr_matrix(orbit_matrix_up,dtype='complex64')
+                    orbit_matrix_down_csr = csr_matrix(orbit_matrix_down,dtype='complex64')
+
+                    orbit_dict = {
+                                    ( 1, 0): orbit_matrix_both_csr,
+                                    (-1, 0): orbit_matrix_both_csr,
+                                    (-1, 1): (orbit_matrix_up_csr*np.exp(1j*4*np.pi/3) + orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3))*np.exp(1j*2*np.pi/3),
+                                    ( 1,-1): (orbit_matrix_up_csr*np.exp(1j*4*np.pi/3) + orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3))*np.exp(1j*2*np.pi/3),
+                                    ( 0,-1): (orbit_matrix_up_csr*np.exp(1j*8*np.pi/3) + orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3))*np.exp(1j*4*np.pi/3),
+                                    ( 0, 1): (orbit_matrix_up_csr*np.exp(1j*8*np.pi/3) + orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3))*np.exp(1j*4*np.pi/3)
+                                    }
+
+
+
+                ##### M_y 3 fold inter-sublattice pairing ######
+                elif feature_mode == "(M_y 3 fold) spin singlet, inter-valley singlet iτ2, inter-sublattice singlet iσ2":
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[ 0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    # the valley_matrix will not be used; a special tensor to valley function is used instead
+                    valley_matrix = np.matrix([
+                                               [ 0, 1],
+                                               [-1, 0]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_both = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [-1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_up = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_down = np.matrix([
+                                                [ 0, 0, 0, 0, 0],
+                                                [-1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_both_csr = csr_matrix(orbit_matrix_both,dtype='complex64')
+                    orbit_matrix_up_csr = csr_matrix(orbit_matrix_up,dtype='complex64')
+                    orbit_matrix_down_csr = csr_matrix(orbit_matrix_down,dtype='complex64')
+
+                    orbit_dict = {
+                                    ( 1, 0): orbit_matrix_both_csr,
+                                    (-1, 0): orbit_matrix_both_csr,
+                                    (-1, 1): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3),
+                                    ( 0, 1): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3),
+                                    ( 0,-1): orbit_matrix_up_csr*np.exp(1j*8*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3),
+                                    ( 1,-1): orbit_matrix_up_csr*np.exp(1j*8*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3)
+                                    }
+                elif feature_mode == "(M_y 3 fold) spin singlet, inter-valley triplet τ1, inter-sublattice triplet σ1":
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    # the valley_matrix will not be used; a special tensor to valley function is used instead
+                    valley_matrix = np.matrix([
+                                               [ 0, 1],
+                                               [ 0, 0]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_both = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_up = np.matrix([
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_down = np.matrix([
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_both_csr = csr_matrix(orbit_matrix_both,dtype='complex64')
+                    orbit_matrix_up_csr = csr_matrix(orbit_matrix_up,dtype='complex64')
+                    orbit_matrix_down_csr = csr_matrix(orbit_matrix_down,dtype='complex64')
+
+                    orbit_dict = {
+                                    ( 1, 0): orbit_matrix_both_csr,
+                                    (-1, 0): orbit_matrix_both_csr,
+                                    (-1, 1): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3),
+                                    ( 0, 1): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3),
+                                    ( 0,-1): orbit_matrix_up_csr*np.exp(1j*8*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3),
+                                    ( 1,-1): orbit_matrix_up_csr*np.exp(1j*8*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3)
+                                    }
+                elif feature_mode == "(M_y 3 fold) spin singlet, intra-valley triplet τ0, intra-sublattice triplet σ0":
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[0,1],
+                                                 [-1,0]])
+                    else:
+                        Logger.raiseException('Require spin degeneracy in order for spin singlet pairing.', exception=ValueError)
+
+                    if not self.valley_is_degen:
+                        Logger.raiseException('Can only use this feature mode with valley degeneracy.', exception=ValueError)
+                    # the valley_matrix will not be used; a special tensor to valley function is used instead
+                    valley_matrix = np.matrix([
+                                               [ 1, 0],
+                                               [ 0, 0]
+                                               ])
+                    use_default_valley = False
+
+                    orbit_matrix_both = np.matrix([
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_up = np.matrix([
+                                                [ 1, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_down = np.matrix([
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 1, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0],
+                                                [ 0, 0, 0, 0, 0]
+                                                ])
+
+                    orbit_matrix_both_csr = csr_matrix(orbit_matrix_both,dtype='complex64')
+                    orbit_matrix_up_csr = csr_matrix(orbit_matrix_up,dtype='complex64')
+                    orbit_matrix_down_csr = csr_matrix(orbit_matrix_down,dtype='complex64')
+
+                    orbit_dict = {
+                                    ( 1, 0): orbit_matrix_both_csr,
+                                    (-1, 0): orbit_matrix_both_csr,
+                                    (-1, 1): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3),
+                                    ( 0, 1): orbit_matrix_up_csr*np.exp(1j*4*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*4*np.pi/3),
+                                    ( 0,-1): orbit_matrix_up_csr*np.exp(1j*8*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3),
+                                    ( 1,-1): orbit_matrix_up_csr*np.exp(1j*8*np.pi/3)+orbit_matrix_down_csr*np.exp(-1j*8*np.pi/3)
+                                    }
+
 
                 ##### Other pairings ######
                 elif feature_mode == "spin triplet inter-sublattice intra-unit-cell 12":
@@ -1085,6 +1803,137 @@ class Tensorist():
                 else: 
                     Logger.raiseException('Invalid feature mode for self.layer_material=tbg.', exception=ValueError)
             
+            elif self.layer_material=='kagome':
+
+                if feature_mode == "spin singlet, intra-unit-cell inter-sublattice 12":
+
+                    if self.num_band != 3:
+                        Logger.raiseException('Can only use this feature mode for the kagome case, i.e. self.num_band = 3.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[ 0,1],
+                                                 [-1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    orbit_matrix_intra = np.matrix([
+                                               [ 0, 1, 0],
+                                               [ 1, 0, 0],
+                                               [ 0, 0, 0]
+                                               ])
+
+                    orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
+
+                    orbit_dict = {
+                                    (0,0): orbit_matrix_intra_csr,
+                                    }
+                elif feature_mode == "spin singlet, intra-unit-cell inter-sublattice 13":
+
+                    if self.num_band != 3:
+                        Logger.raiseException('Can only use this feature mode for the kagome case, i.e. self.num_band = 3.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[ 0,1],
+                                                 [-1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    orbit_matrix_intra = np.matrix([
+                                               [ 0, 0, 1],
+                                               [ 0, 0, 0],
+                                               [ 1, 0, 0]
+                                               ])
+
+                    orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
+
+                    orbit_dict = {
+                                    (0,0): orbit_matrix_intra_csr,
+                                    }
+                elif feature_mode == "spin singlet, intra-unit-cell inter-sublattice 23":
+
+                    if self.num_band != 3:
+                        Logger.raiseException('Can only use this feature mode for the kagome case, i.e. self.num_band = 3.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[ 0,1],
+                                                 [-1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    orbit_matrix_intra = np.matrix([
+                                               [ 0, 0, 0],
+                                               [ 0, 0, 1],
+                                               [ 0, 1, 0]
+                                               ])
+
+                    orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
+
+                    orbit_dict = {
+                                    (0,0): orbit_matrix_intra_csr,
+                                    }
+                elif feature_mode == "spin singlet, intra-unit-cell inter-sublattice 123":
+
+                    if self.num_band != 3:
+                        Logger.raiseException('Can only use this feature mode for the kagome case, i.e. self.num_band = 3.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[ 0,1],
+                                                 [-1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    orbit_matrix_intra = np.matrix([
+                                               [ 0, 1, 1],
+                                               [ 1, 0, 1],
+                                               [ 1, 1, 0]
+                                               ])
+
+                    orbit_matrix_intra_csr = csr_matrix(orbit_matrix_intra,dtype='complex64')
+
+                    orbit_dict = {
+                                    (0,0): orbit_matrix_intra_csr,
+                                    }                  
+                elif feature_mode == "spin singlet, onsite 123":
+
+                    if self.num_band != 3:
+                        Logger.raiseException('Can only use this feature mode for the kagome case, i.e. self.num_band = 3.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[ 0,1],
+                                                 [-1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    orbit_matrix = np.matrix([
+                                             [ 1, 0, 0],
+                                             [ 0, 1, 0],
+                                             [ 0, 0, 1]
+                                            ])
+                    orbit_dict = {
+                                    (0,0): orbit_matrix,
+                                    }
+                elif feature_mode == "spin singlet, onsite 12":
+
+                    if self.num_band != 3:
+                        Logger.raiseException('Can only use this feature mode for the kagome case, i.e. self.num_band = 3.', exception=ValueError)
+
+                    if self.spin_is_degen:
+                        spin_matrix = np.matrix([[ 0,1],
+                                                 [-1,0]])
+                    else:
+                        spin_matrix = 1
+
+                    orbit_matrix = np.matrix([
+                                             [ 1, 0, 0],
+                                             [ 0, 1, 0],
+                                             [ 0, 0, 0]
+                                            ])
+                    orbit_dict = {
+                                    (0,0): orbit_matrix,
+                                    }
+                else: 
+                    Logger.raiseException('Invalid feature mode for self.layer_material=kagome.', exception=ValueError)
+
             else:
                 Logger.raiseException('Wrong value for \"feature_mode\". Check the documentation of get_subspace_matrix_dicts\
                      method, in Tensorist Class in FeatureClass module for allowed input.',exception=ValueError)
@@ -1194,33 +2043,49 @@ class Tensorist():
         valley_subspace_csr = valley_subspace.tocsr()
         return valley_subspace_csr
 
-    def tensor_to_valley_pairing_part_τ1_C3_intersublattice(self,valley_matrix,subspace):
+    def tensor_to_valley_pairing_part_iτ2_C3_intersublattice(self,subspace):
 
-        # set lower left block matrix: complex conjugate of subspace matrix
-        lower_block_subspace = subspace.conj()
-        lower_block_matrix = np.matrix([[0,0],[1,0]])
-        lower_block = kron(lower_block_matrix,lower_block_subspace)
+        # set lower left block matrix: negative complex conjugate of subspace matrix
+        lower_block_subspace = -subspace.conj()
+        lower_block_skeleton = np.matrix([[0,0],[1,0]])
+        lower_block = kron(lower_block_skeleton,lower_block_subspace)
         lower_block_csr = lower_block.tocsr()
 
         # set upper right block matrix: original subspace matrix
-        upper_block_matrix = np.matrix([[0,1],[0,0]])
-        upper_block = kron(upper_block_matrix,subspace)
+        upper_block_skeleton = np.matrix([[0,1],[0,0]])
+        upper_block = kron(upper_block_skeleton,subspace)
         upper_block_csr = upper_block.tocsr()
 
         valley_subspace_csr = lower_block_csr + upper_block_csr
         return valley_subspace_csr
 
-    def tensor_to_valley_pairing_part_τ0_C3_intrasublattice(self,valley_matrix,subspace):
+    def tensor_to_valley_pairing_part_τ1_C3_intersublattice(self,subspace):
 
         # set lower left block matrix: complex conjugate of subspace matrix
         lower_block_subspace = subspace.conj()
-        lower_block_matrix = np.matrix([[0,0],[1,0]])
-        lower_block = kron(lower_block_matrix,lower_block_subspace)
+        lower_block_skeleton = np.matrix([[0,0],[1,0]])
+        lower_block = kron(lower_block_skeleton,lower_block_subspace)
         lower_block_csr = lower_block.tocsr()
 
         # set upper right block matrix: original subspace matrix
-        upper_block_matrix = np.matrix([[0,1],[0,0]])
-        upper_block = kron(upper_block_matrix,subspace)
+        upper_block_skeleton = np.matrix([[0,1],[0,0]])
+        upper_block = kron(upper_block_skeleton,subspace)
+        upper_block_csr = upper_block.tocsr()
+
+        valley_subspace_csr = lower_block_csr + upper_block_csr
+        return valley_subspace_csr
+
+    def tensor_to_valley_pairing_part_τ0_C3_intrasublattice(self,subspace):
+
+        # set lower right block matrix: complex conjugate of subspace matrix
+        lower_block_subspace = subspace.conj()
+        lower_block_skeleton = np.matrix([[0,0],[0,1]])
+        lower_block = kron(lower_block_skeleton,lower_block_subspace)
+        lower_block_csr = lower_block.tocsr()
+
+        # set upper left block matrix: original subspace matrix
+        upper_block_skeleton = np.matrix([[1,0],[0,0]])
+        upper_block = kron(upper_block_skeleton,subspace)
         upper_block_csr = upper_block.tocsr()
 
         valley_subspace_csr = lower_block_csr + upper_block_csr
